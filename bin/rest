@@ -1,0 +1,65 @@
+#!/usr/bin/env ruby
+require_relative '../lib/scnr/application'
+
+def response
+   if @last_response.headers['Content-Type'].include? 'json'
+      data = JSON.load( @last_response.body )
+   else
+      data = @last_response.body
+   end
+   {
+     code: @last_response.code,
+     data: data
+   }
+end
+
+def response_data
+   response[:data]
+end
+
+def request( method, resource = nil, parameters = nil )
+   options = {}
+
+   if parameters
+      if method == :get
+         options[:params] = parameters
+      else
+         options[:body] = parameters.to_json
+      end
+   end
+
+   @last_response = Typhoeus.send(
+     method,
+     "http://127.0.0.1:7331/#{resource}",
+     options
+   )
+end
+
+###################################################################
+
+pid = SCNR::Application.spawn( :rest )
+sleep 1 while request( :get ).code == 0
+
+request :post, 'instances', {
+   url:    'http://testhtml5.vulnweb.com',
+   audit:  {
+      elements: [:links, :forms, :cookies]
+   },
+   checks: 'active/*'
+}
+instance_id = response_data['id']
+
+while sleep( 1 )
+   request :get, "instances/#{instance_id}/proxy/progress"
+   ap response_data
+
+   request :get, "instances/#{instance_id}"
+   break if !response_data['busy']
+end
+
+request :get, "instances/#{instance_id}/report.crf"
+ap Cuboid::Report.from_crf( response_data )
+
+request :delete, "instances/#{instance_id}"
+
+Cuboid::Processes::Manager.kill pid

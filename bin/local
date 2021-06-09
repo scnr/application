@@ -1,0 +1,32 @@
+#!/usr/bin/env ruby
+
+# Get the CLI output interface implementation.
+require 'scnr/ui/cli/output'
+
+require_relative '../lib/scnr/application'
+
+module Cuboid
+module UI
+    Output = SCNR::UI::CLI::Output
+end
+end
+
+application = SCNR::Application
+
+application.options = {
+    url:    'http://testhtml5.vulnweb.com',
+    audit:  {
+      elements: [:links, :forms, :cookies]
+    },
+    checks: 'active/*'
+}
+
+Thread.new do
+    while sleep( 1 )
+        ap application.framework.statistics
+    end
+end
+
+application.run
+
+ap application.generate_report

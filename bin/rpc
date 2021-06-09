@@ -1,0 +1,21 @@
+#!/usr/bin/env ruby
+require_relative '../lib/scnr/application'
+
+instance = SCNR::Application.spawn( :instance )
+
+instance.run(
+    url:    'http://testhtml5.vulnweb.com',
+    audit:  {
+        elements: [:links, :forms, :cookies]
+    },
+    checks: 'active/*'
+)
+
+while instance.busy?
+    ap instance.proxy.progress
+    sleep 1
+end
+
+ap instance.generate_report
+
+instance.shutdown
