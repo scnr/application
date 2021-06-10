@@ -1,17 +1,18 @@
 #!/usr/bin/env ruby
 
 # Get the CLI output interface implementation.
-# require 'scnr/ui/cli/output'
+require 'scnr/ui/cli/output'
 
 require_relative '../lib/scnr/application'
 
-# module Cuboid
-# module UI
-#     Output = SCNR::UI::CLI::Output
-# end
-# end
+module Cuboid
+module UI
+    Output = SCNR::UI::CLI::Output
+end
+end
 
 application = SCNR::Application
+framework   = application.framework
 
 application.options = {
     url:    'http://testhtml5.vulnweb.com',
@@ -23,10 +24,15 @@ application.options = {
 
 Thread.new do
     while sleep( 1 )
-        ap application.framework.statistics
+        ap(
+          status:     framework.status,
+          statistics: framework.statistics,
+          sitemap:    framework.sitemap,
+          messages:   framework.status_messages,
+          issues:     SCNR::Engine::Data.issues.sort,
+        )
     end
 end
 
 application.run
-
 ap application.generate_report
