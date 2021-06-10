@@ -1,15 +1,15 @@
 #!/usr/bin/env ruby
 
 # Get the CLI output interface implementation.
-require 'scnr/ui/cli/output'
+# require 'scnr/ui/cli/output'
 
 require_relative '../lib/scnr/application'
 
-module Cuboid
-module UI
-    Output = SCNR::UI::CLI::Output
-end
-end
+# module Cuboid
+# module UI
+#     Output = SCNR::UI::CLI::Output
+# end
+# end
 
 application = SCNR::Application
 

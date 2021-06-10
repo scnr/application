@@ -9,7 +9,7 @@ class Application < ::Cuboid::Application
 
     # Let's say one for the scanner and another for the browsers.
     provision_cores  2
-    provision_memory 1 * 1024 * 1024 * 1024
+    provision_memory 0 * 1024 * 1024 * 1024
     provision_disk   2 * 1024 * 1024 * 1024
 
     validate_options_with :validate_options
@@ -18,27 +18,31 @@ class Application < ::Cuboid::Application
     handler_for :resume,  :do_resume
     handler_for :abort,   :do_abort
 
-    rpc_service_for  :proxy, RPCProxy
-    rest_service_for :proxy, RESTProxy
+    rpc_service_for  :engine, RPCProxy
+    rest_service_for :engine, RESTProxy
 
     serialize_with Marshal
 
     attr_reader :framework
 
+    def initialize(*)
+        super
+
+        @framework = Engine::Framework.unsafe
+    end
+
     def run
-        Engine::Framework.safe do |f|
-            # Hacky.
-            @framework = f
+        framework.checks.load Engine::Options.checks
 
-            f.checks.load Engine::Options.checks
+        framework.plugins.load_defaults
+        framework.plugins.load Engine::Options.plugins.keys
 
-            f.plugins.load_defaults
-            f.plugins.load Engine::Options.plugins.keys
+        framework.run
 
-            f.run
-
-            report f.report
-        end
+        report framework.report
+    ensure
+        framework.clean_up
+        framework.reset
     end
 
     def validate_options( options )

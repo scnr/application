@@ -12,7 +12,10 @@ instance.run(
 )
 
 while instance.busy?
-    ap instance.proxy.progress
+    ap instance.engine.progress(
+      as_hash: true,
+      with: [:issues, :sitemap, :errors]
+    )
     sleep 1
 end
 
