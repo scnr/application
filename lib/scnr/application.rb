@@ -18,8 +18,8 @@ class Application < ::Cuboid::Application
     handler_for :resume,  :do_resume
     handler_for :abort,   :do_abort
 
-    rpc_service_for  :engine, RPCProxy
-    rest_service_for :engine, RESTProxy
+    instance_service_for :scan, RPCProxy
+    rest_service_for     :scan, RESTProxy
 
     serialize_with Marshal
 

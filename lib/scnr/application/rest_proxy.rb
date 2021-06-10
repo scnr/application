@@ -9,7 +9,7 @@ def self.registered( app )
         }
 
         data = instance_for( params[:instance] ) do |instance|
-            instance.engine.progress(
+            instance.scan.progress(
               with:    [
                          :issues,
                          errors:  session[params[:instance]][:seen_errors],

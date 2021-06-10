@@ -12,7 +12,7 @@ instance.run(
 )
 
 while instance.busy?
-    ap instance.engine.progress(
+    ap instance.scan.progress(
       as_hash: true,
       with: [:issues, :sitemap, :errors]
     )
