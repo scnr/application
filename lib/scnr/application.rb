@@ -9,7 +9,7 @@ class Application < ::Cuboid::Application
 
     # Let's say one for the scanner and another for the browsers.
     provision_cores  2
-    provision_memory 0 * 1024 * 1024 * 1024
+    provision_memory 1 * 1024 * 1024 * 1024
     provision_disk   2 * 1024 * 1024 * 1024
 
     validate_options_with :validate_options
