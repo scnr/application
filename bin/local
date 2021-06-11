@@ -1,8 +1,4 @@
 #!/usr/bin/env ruby
-
-# Get the CLI output interface implementation.
-require 'scnr/ui/cli/output'
-
 require_relative '../lib/scnr/application'
 
 application = SCNR::Application

@@ -24,7 +24,6 @@ Gem::Specification.new do |spec|
   end
 
   spec.add_dependency 'cuboid'
-  # spec.add_dependency 'scnr-ui-cli'
   spec.add_dependency 'scnr-engine'
 
   spec.add_development_dependency "bundler"
