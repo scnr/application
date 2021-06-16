@@ -82,6 +82,7 @@ class RPCProxy
     #   * `errors` -- {#errors} (disabled by default)
     #   * `sitemap` -- {#sitemap} (disabled by default)
     def progress( options = {} )
+        # keep track based on session
         progress_handler( options )
     end
 
@@ -89,26 +90,24 @@ class RPCProxy
     #   Get sitemap entries after this index.
     #
     # @return   [Hash<String=>Integer>]
-    def sitemap_entries( from_index = 0 )
-        return {} if framework.sitemap.size <= from_index + 1
-
-        Hash[framework.sitemap.to_a[from_index..-1] || {}]
+    def sitemap( from_index = 0 )
+        scan.sitemap from_index
     end
 
     # @return  [Array<Hash>]
     #   Issues as {Engine::Issue#to_rpc_data RPC data}.
     #
     # @private
-    def issues
-        SCNR::Engine::Data.issues.sort.map(&:to_rpc_data)
+    def issues( without = [] )
+        scan.issues( without ).map(&:to_rpc_data)
     end
 
     # @return   [Array<Hash>]
     #   {#issues} as an array of Hashes.
     #
     # @see #issues
-    def issues_as_hash
-        SCNR::Engine::Data.issues.sort.map(&:to_h)
+    def issues_as_hash( without = [] )
+        scan.issues( without ).map(&:to_h)
     end
 
     # @param    [Integer]   starting_line
@@ -116,15 +115,17 @@ class RPCProxy
     #
     # @return   [Array<String>]
     def errors( starting_line = 0 )
-        return [] if Cuboid::UI::Output.error_buffer.empty?
+        # return [] if Cuboid::UI::Output.error_buffer.empty?
+        #
+        # error_strings = Cuboid::UI::Output.error_buffer
+        #
+        # if starting_line != 0
+        #     error_strings = error_strings[starting_line..-1]
+        # end
+        #
+        # error_strings
 
-        error_strings = Cuboid::UI::Output.error_buffer
-
-        if starting_line != 0
-            error_strings = error_strings[starting_line..-1]
-        end
-
-        error_strings
+        scan.errors( starting_line )
     end
 
     private
@@ -149,7 +150,7 @@ class RPCProxy
             options[:sitemap] = with[:sitemap]
         end
 
-        data = framework_progress( options )
+        data = scan_progress( options )
 
         if data[:issues]
             if without[:issues].is_a? Array
@@ -183,7 +184,7 @@ class RPCProxy
     #
     # @return    [Hash]
     #   Progress data.
-    def framework_progress( opts = {} )
+    def scan_progress( opts = {} )
         include_statistics = opts[:statistics].nil? ? true : opts[:statistics]
         include_issues     = opts[:issues].nil?     ? true : opts[:issues]
         include_sitemap    = opts.include?( :sitemap ) ?
@@ -194,8 +195,8 @@ class RPCProxy
         as_hash = opts[:as_hash] ? true : opts[:as_hash]
 
         data = {
-          status: framework.status,
-          busy:   framework.running?,
+          status: scan.status,
+          busy:   scan.busy?,
           seed:   SCNR::Engine::Utilities.random_seed,
         }
 
@@ -204,11 +205,11 @@ class RPCProxy
         end
 
         if include_statistics
-            data[:statistics] = framework.statistics
+            data[:statistics] = scan.statistics
         end
 
         if include_sitemap
-            data[:sitemap] = sitemap_entries( include_sitemap )
+            data[:sitemap] = sitemap( include_sitemap )
         end
 
         if include_errors
@@ -216,11 +217,11 @@ class RPCProxy
               errors( include_errors.is_a?( Integer ) ? include_errors : 0 )
         end
 
-        data.merge( messages: framework.status_messages )
+        data.merge( messages: scan.status_messages )
     end
 
-    def framework
-        SCNR::Application.framework
+    def scan
+        SCNR::Application.api.scan
     end
 
 end

@@ -1,5 +1,5 @@
 require 'cuboid'
-require 'scnr/engine'
+require 'scnr/engine/api'
 
 require_relative 'application/rpc_proxy'
 require_relative 'application/rest_proxy'
@@ -23,67 +23,51 @@ class Application < ::Cuboid::Application
 
     serialize_with Marshal
 
-    attr_reader :framework
+    attr_reader :api
 
     def initialize(*)
         super
 
-        @framework = Engine::Framework.unsafe
+        @api = Engine::API.new
     end
 
     def run
-        framework.checks.load Engine::Options.checks
-
-        framework.plugins.load_defaults
-        framework.plugins.load Engine::Options.plugins.keys
-
-        framework.run
-
-        report framework.report
-    ensure
-        framework.clean_up
-        framework.reset
+        @api.scan.run! { |r| report r }
     end
 
     def validate_options( options )
-        Engine::Options.update options
-        Engine::Options.validate
+        @api.scan.options.set options
         true
     rescue Engine::Options::Error
         false
     end
 
     def do_pause
-        @framework.pause!
+        @api.scan.pause!
     end
 
     def do_resume
-        @framework.resume!
+        @api.scan.resume!
     end
 
     def do_abort
-        @framework.abort!
+        @api.scan.abort!
     end
 
     # Override Cuboid instead of handling the event.
     def suspend!
-        sp = @framework.suspend!
-        @framework.clean_up
+        snapshot_path = nil
+        @api.scan.suspend! { |sp| snapshot_path = sp }
 
         # Change Cuboid's state to mirror the scanner's.
         state.suspended
 
-        sp
-    end
-
-    # Override Cuboid.
-    def snapshot_path
-        @framework.snapshot_path
+        snapshot_path
     end
 
     # Override Cuboid instead of handling the event.
     def restore!( ses )
-        @framework.restore! ses
+        @api.scan.restore! ses
     end
 
 end

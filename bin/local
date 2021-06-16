@@ -2,8 +2,6 @@
 require_relative '../lib/scnr/application'
 
 application = SCNR::Application
-framework   = application.framework
-
 application.options = {
     url:    'http://testhtml5.vulnweb.com',
     audit:  {
@@ -12,16 +10,17 @@ application.options = {
     checks: 'active/*'
 }
 
-Thread.new do
-    while sleep( 1 )
-        ap(
-          status:     framework.status,
-          statistics: framework.statistics,
-          sitemap:    framework.sitemap,
-          messages:   framework.status_messages,
-          issues:     SCNR::Engine::Data.issues.sort,
-        )
-    end
+api = application.api
+
+api.state.on :change do |state|
+    ap state.status
+end
+
+api.data.sitemap.on :new do |entry|
+    ap entry
+end
+api.data.issues.on :new do |issue|
+    ap issue
 end
 
 application.run
