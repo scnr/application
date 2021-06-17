@@ -195,9 +195,9 @@ class RPCProxy
         as_hash = opts[:as_hash] ? true : opts[:as_hash]
 
         data = {
-          status: scan.status,
-          busy:   scan.busy?,
-          seed:   SCNR::Engine::Utilities.random_seed,
+          status:  scan.status,
+          running: scan.running?,
+          seed:    SCNR::Engine::Utilities.random_seed,
         }
 
         if include_issues
