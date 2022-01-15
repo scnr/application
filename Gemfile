@@ -1,8 +1,8 @@
 source 'https://rubygems.org'
 
-# gem 'cuboid',      path: '../../../qadron/cuboid'
-# gem 'dsel',        path: '../../../qadron/dsel'
-gem 'scnr-engine', path: '../engine'
+if File.exist? '../engine'
+    gem 'scnr-engine', path: '../engine'
+end
 
 # Specify your gem's dependencies in application.gemspec
 gemspec
