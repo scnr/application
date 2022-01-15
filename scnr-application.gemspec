@@ -16,7 +16,6 @@ Gem::Specification.new do |spec|
   spec.files         = Dir.glob( 'bin/**/**' )
 
   spec.bindir        = "bin"
-  spec.executables   = spec.files.grep(%r{^exe/}) { |f| File.basename(f) }
   spec.require_paths = ["lib"]
 
   if spec.respond_to?(:metadata)
