@@ -12,11 +12,14 @@ Gem::Specification.new do |spec|
     spec.summary       = %q{SCNR application.}
     spec.homepage      = "http://placeholder.com"
 
-    spec.files         = Dir.glob( 'lib/**/**' )
-    spec.files         = Dir.glob( 'bin/**/**' )
-
     spec.bindir        = "bin"
     spec.require_paths = ["lib"]
+
+    spec.files        += Dir.glob( 'lib/**/**' )
+    spec.test_files    = Dir.glob( 'spec/**/**' )
+
+    spec.executables   = Dir.glob( 'bin/*' ).map { |e| File.basename e }
+    spec.require_paths = ['lib']
 
     if spec.respond_to?(:metadata)
       spec.metadata['allowed_push_host'] = "TODO: Set to 'http://mygemserver.com' to prevent pushes to rubygems.org, or delete to allow pushes to any server."
