@@ -42,6 +42,13 @@ class Application < ::Cuboid::Application
         false
     end
 
+    def generate_report
+        # If we call this after the scan is done, the report will be empty due
+        # to post-scan cleanup, but one will have already been set.
+        report( @api.scan.generate_report ) unless data.report
+        super
+    end
+
     def do_pause
         @api.scan.pause!
     end
@@ -52,6 +59,7 @@ class Application < ::Cuboid::Application
 
     def do_abort
         @api.scan.abort!
+        report @api.scan.generate_report
     end
 
     # Override Cuboid instead of handling the event.
