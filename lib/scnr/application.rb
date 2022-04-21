@@ -2,6 +2,7 @@ require 'cuboid'
 require 'scnr/engine/api'
 
 require_relative 'application/rpc_proxy'
+require_relative 'application/multi'
 require_relative 'application/rest_proxy'
 
 module SCNR
@@ -18,8 +19,11 @@ class Application < ::Cuboid::Application
     handler_for :resume,  :do_resume
     handler_for :abort,   :do_abort
 
-    instance_service_for :scan, RPCProxy
-    rest_service_for     :scan, RESTProxy
+    instance_service_for :scan,  RPCProxy
+
+    instance_service_for :multi, Multi
+
+    rest_service_for     :scan,  RESTProxy
 
     serialize_with Marshal
 
@@ -32,10 +36,56 @@ class Application < ::Cuboid::Application
     end
 
     def run
-        @api.scan.run! { |r| report r }
+        if @multi[:processes].to_i > 1
+
+            # One for the crawler.
+            @multi[:processes] -= 1
+
+            crawler = self.class.connect(
+                url:   Cuboid::Options.rpc.url,
+                token: Cuboid::Options.datastore.token
+            )
+
+            crawler.multi.make_crawler
+
+            agent = Processes::Agents.connect( Cuboid::Options.agent.url )
+
+            auditors = []
+            @multi[:processes].times do |i|
+                instance_info = agent.spawn
+                auditors << instance_info
+
+                instance = self.class.connect( instance_info )
+                instance.multi.make_auditor( crawler.url, crawler.token )
+            end
+
+            auditors.each do |instance_info|
+                self.class.connect( instance_info ).
+                  run( SCNR::Engine::Options.to_rpc_data )
+            end
+
+            crawler.multi.set_auditors auditors
+
+            # We're just the crawler, auditors will audit the pages.
+            SCNR::Engine::Options.checks = []
+            @api.scan.options.set SCNR::Engine::Options.to_h
+        end
+
+        @api.scan.run.first
+    rescue => e
+        ap e
+        ap e.backtrace
     end
 
     def validate_options( options )
+        options = options.dup
+
+        @multi = options.delete('multi')&.my_symbolize_keys || {}
+
+        if !@multi.empty? && !Cuboid::Options.agent.url
+            raise ArgumentError, 'Multi options set but without Agent.'
+        end
+
         @api.scan.options.set options
         true
     rescue Engine::Options::Error
@@ -43,8 +93,6 @@ class Application < ::Cuboid::Application
     end
 
     def generate_report
-        # If we call this after the scan is done, the report will be empty due
-        # to post-scan cleanup, but one will have already been set.
         report( @api.scan.generate_report ) unless data.report
         super
     end
@@ -64,13 +112,16 @@ class Application < ::Cuboid::Application
 
     # Override Cuboid instead of handling the event.
     def suspend!
-        snapshot_path = nil
-        @api.scan.suspend! { |sp| snapshot_path = sp }
+        @api.scan.suspend!
 
         # Change Cuboid's state to mirror the scanner's.
         state.suspended
 
         snapshot_path
+    end
+
+    def snapshot_path
+        @api.scan.snapshot_path
     end
 
     # Override Cuboid instead of handling the event.

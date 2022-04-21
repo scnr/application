@@ -1,24 +1,48 @@
 #!/usr/bin/env ruby
 require_relative '../lib/scnr/application'
 
-instance = SCNR::Application.spawn( :instance )
+agent = SCNR::Application.spawn( :agent )
+
+instance = SCNR::Application.connect( agent.spawn )
 
 instance.run(
-    url:    'http://testhtml5.vulnweb.com',
+    # multi: {
+    #   processes: 5
+    # },
+    url:    'http://testhtml5.vulnweb.com/',
     audit:  {
         elements: [:links, :forms, :cookies]
     },
-    checks: 'active/*'
+    checks: ['*']
 )
 
-while instance.busy?
-    ap instance.scan.progress(
-      as_hash: true,
-      with: [:issues, :sitemap, :errors]
-    )
+t = Time.now
+
+while instance.scan.progress['status'] != 'done'
+    # ap instance.scan.progress(
+    #   as_hash: true,
+    #   with: [:issues, :sitemap, :errors]
+    # )
     sleep 1
 end
 
-ap instance.generate_report
+total = Time.now - t
+
+ap instance.generate_report.data.issues.size
+p instance.generate_report.data.issues.map(&:name).map(&:to_s)
+
+ap total
+
+# 23
+# 191
+
+# 15
+# 384
+
+# 20
+# 154
+
+# 16
+# 210
 
 instance.shutdown
