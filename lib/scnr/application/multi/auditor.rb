@@ -14,7 +14,7 @@ module Auditor
             end
 
             def audit_page( page )
-                ap "AUDITING: [#{Cuboid::Options.rpc.url}] #{page.dom.url}"
+                ap "[#{Cuboid::Options.rpc.url}] AUDITING: #{page.dom.url}"
 
                 super( page )
             end

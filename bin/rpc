@@ -6,17 +6,15 @@ agent = SCNR::Application.spawn( :agent )
 instance = SCNR::Application.connect( agent.spawn )
 
 instance.run(
-    # multi: {
-    #   processes: 5
-    # },
+    multi: {
+      processes: 5
+    },
     url:    'http://testhtml5.vulnweb.com/',
     audit:  {
         elements: [:links, :forms, :cookies]
     },
     checks: ['*']
 )
-
-t = Time.now
 
 while instance.busy?
     # ap instance.scan.progress(
@@ -26,13 +24,7 @@ while instance.busy?
     sleep 1
 end
 
-total = Time.now - t
-
-report = instance.generate_report.data
-
-ap report.issues.size
-p report.issues.map(&:name).map(&:to_s)
-
-ap total
+ap report = instance.generate_report.data
+ap report.finish_datetime - report.start_datetime
 
 instance.shutdown

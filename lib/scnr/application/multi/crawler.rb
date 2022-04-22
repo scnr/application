@@ -5,7 +5,7 @@ module Crawler
         SCNR::Engine::Framework.class_eval do
 
             def audit_page( page )
-                ap "CRAWLING: #{page.dom.url}"
+                ap "[#{Cuboid::Options.rpc.url}] CRAWLING: #{page.dom.url}"
 
                 # Us for just crawling.
                 r = super( page )
@@ -53,7 +53,7 @@ module Crawler
                 return if self.done_signals.size != self.auditors.size
 
                 self.auditors.each do |auditor|
-                    auditor.multi.clean_up { auditor.shutdown }
+                    auditor.multi.clean_up { auditor.shutdown { ap 1 } }
                 end
 
                 super
