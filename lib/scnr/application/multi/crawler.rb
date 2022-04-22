@@ -14,10 +14,12 @@ module Crawler
                 idle_auditor_url = self.done_signals.first
                 auditor = self.auditors.find { |auditor| auditor.url == idle_auditor_url }
 
-                # If all auditors are busy, pick any which one in a predictable way.
+                # All auditors are busy.
                 if !auditor
-                    idx = page.persistent_hash.modulo( self.auditors.size )
-                    auditor = self.auditors[idx]
+                    # Rotate auditors to keep distribution even.
+                    auditor = self.auditors.first
+                    self.auditors.delete( auditor )
+                    self.auditors << auditor
                 end
 
                 signal_not_done auditor.url
@@ -37,20 +39,21 @@ module Crawler
 
                 SCNR::Engine::HTTP::Client.on_new_cookies do |cookies, _|
                     self.auditors.each do |auditor|
-                        auditor.multi.update_cookies( cookies.map(&:to_rpc_data) )
+                        auditor.multi.update_cookies( cookies.map(&:to_rpc_data) ) {}
                     end
                 end
 
                 super
 
-                signal_done self.self_url
+                # Crawling done, now wait for the auditors to complete as well.
+                sleep 0.1 while self.done_signals.size != self.auditors.size
             end
 
             def clean_up
-                return if self.done_signals.size != self.auditors.size + 1
+                return if self.done_signals.size != self.auditors.size
 
-                self.auditors.each do |instance|
-                    instance.multi.clean_up {}
+                self.auditors.each do |auditor|
+                    auditor.multi.clean_up { auditor.shutdown }
                 end
 
                 super
@@ -58,10 +61,6 @@ module Crawler
 
             def auditors
                 @peers ||= []
-            end
-
-            def self_url
-                Cuboid::Options.rpc.url
             end
 
             def signal_done( instance_url )

@@ -59,9 +59,13 @@ class Application < ::Cuboid::Application
                 instance.multi.make_auditor( crawler.url, crawler.token )
             end
 
+            # We don't want the auditors to perform anr type of crawl related stuff.
+            auditor_options = SCNR::Engine::Options.to_rpc_data.deep_clone
+            auditor_options['scope']['restrict_paths'].clear
+            auditor_options['scope']['extend_paths'].clear
+
             auditors.each do |instance_info|
-                self.class.connect( instance_info ).
-                  run( SCNR::Engine::Options.to_rpc_data )
+                self.class.connect( instance_info ).run( auditor_options )
             end
 
             crawler.multi.set_auditors auditors
@@ -71,10 +75,7 @@ class Application < ::Cuboid::Application
             @api.scan.options.set SCNR::Engine::Options.to_h
         end
 
-        @api.scan.run.first
-    rescue => e
-        ap e
-        ap e.backtrace
+        report @api.scan.run.first
     end
 
     def validate_options( options )

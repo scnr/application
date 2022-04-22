@@ -18,7 +18,7 @@ instance.run(
 
 t = Time.now
 
-while instance.scan.progress['status'] != 'done'
+while instance.busy?
     # ap instance.scan.progress(
     #   as_hash: true,
     #   with: [:issues, :sitemap, :errors]
@@ -28,21 +28,11 @@ end
 
 total = Time.now - t
 
-ap instance.generate_report.data.issues.size
-p instance.generate_report.data.issues.map(&:name).map(&:to_s)
+report = instance.generate_report.data
+
+ap report.issues.size
+p report.issues.map(&:name).map(&:to_s)
 
 ap total
-
-# 23
-# 191
-
-# 15
-# 384
-
-# 20
-# 154
-
-# 16
-# 210
 
 instance.shutdown

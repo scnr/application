@@ -8,6 +8,7 @@ module Auditor
         SCNR::Engine::Framework.class_eval do
 
             def audit
+                # The trainer would lead us into a crawl, we don't want that.
                 @trainer.unhook!
                 super
             end
@@ -32,10 +33,6 @@ module Auditor
         if !@cb_set
             SCNR::Engine::Data.issues.on_new do |issue|
                 @crawler.multi.log_issue( issue.to_rpc_data ){}
-            end
-
-            SCNR::Engine::Data.framework.on_sitemap_entry do |entry|
-                @crawler.multi.update_sitemap( entry ){}
             end
 
             @cb_set = true
