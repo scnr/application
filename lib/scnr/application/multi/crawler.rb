@@ -10,21 +10,11 @@ module Crawler
                 # Us for just crawling.
                 r = super( page )
 
-                # Try to find an idle auditor to receive each page.
-                idle_auditor_url = self.done_signals.first
-                auditor = self.auditors.find { |auditor| auditor.url == idle_auditor_url }
-
-                # All auditors are busy.
-                if !auditor
-                    # Rotate auditors to keep distribution even.
-                    auditor = self.auditors.first
-                    self.auditors.delete( auditor )
-                    self.auditors << auditor
-                end
-
+                auditor = self.preferred_auditor
                 signal_not_done auditor.url
-
-                auditor.multi.push_page( page.to_rpc_data ) {}
+                auditor.multi.push_page(
+                  deduplicate_page_elements( page ).to_rpc_data
+                ) {}
 
                 r
             end
@@ -57,6 +47,50 @@ module Crawler
                 end
 
                 super
+            end
+
+            def preferred_auditor
+                # Try to find an idle auditor.
+                idle_auditor_url = self.done_signals.first
+                auditor = self.auditors.find { |auditor| auditor.url == idle_auditor_url }
+
+                # All auditors are busy.
+                if !auditor
+                    # Rotate auditors to keep distribution even.
+                    auditor = self.auditors.first
+                    self.auditors.delete( auditor )
+                    self.auditors << auditor
+                end
+
+                auditor
+            end
+
+            def deduplicate_page_elements( page )
+                # Auditors don't share state so we may end up auditing identical
+                # elements which appear in multiple pages from multiple Auditors.
+                #
+                # Ensure that this wont happen via whitelisting.
+
+                @element_filter ||= SCNR::Engine::Support::Filter::Set.new(
+                  hash: :coverage_hash
+                )
+
+                page.elements_within_scope.each do |e|
+                    # Element already seen, i.e. passed for an audit, ignore.
+                    next if @element_filter.include? e
+
+                    # New element, allow its audit...
+                    page.update_element_audit_whitelist( e )
+                    # ...once.
+                    @element_filter << e
+                end
+
+                # No new elements for this page, don't audit any.
+                if page.element_audit_whitelist.empty?
+                    page.do_not_audit_elements
+                end
+
+                page
             end
 
             def auditors
