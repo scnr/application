@@ -72,7 +72,7 @@ module Crawler
                 # Ensure that this wont happen via whitelisting.
 
                 @element_filter ||= SCNR::Engine::Support::Filter::Set.new(
-                  hash: :coverage_hash
+                  hasher: :coverage_hash
                 )
 
                 page.elements_within_scope.each do |e|
