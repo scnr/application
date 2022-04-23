@@ -45,6 +45,7 @@ module Crawler
                 self.auditors.each do |auditor|
                     auditor.multi.clean_up { auditor.shutdown {} }
                 end
+                self.auditors.clear
 
                 super
             end
