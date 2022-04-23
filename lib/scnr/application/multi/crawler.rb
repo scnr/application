@@ -5,8 +5,6 @@ module Crawler
         SCNR::Engine::Framework.class_eval do
 
             def audit_page( page )
-                ap "[#{Cuboid::Options.rpc.url}] CRAWLING: #{page.dom.url}"
-
                 # Us for just crawling.
                 r = super( page )
 

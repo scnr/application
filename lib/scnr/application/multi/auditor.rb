@@ -13,12 +13,6 @@ module Auditor
                 super
             end
 
-            def audit_page( page )
-                ap "[#{Cuboid::Options.rpc.url}] AUDITING: #{page.dom.url}"
-
-                super( page )
-            end
-
             def clean_up( from_rpc = false )
                 return if !from_rpc
                 super
