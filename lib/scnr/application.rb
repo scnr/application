@@ -56,7 +56,7 @@ class Application < ::Cuboid::Application
                 auditors << instance_info
 
                 instance = self.class.connect( instance_info )
-                instance.multi.make_auditor( crawler.url, crawler.token )
+                instance.multi.make_auditor( crawler.url, crawler.token, instance.url )
             end
 
             # We don't want the auditors to perform anr type of crawl related stuff.

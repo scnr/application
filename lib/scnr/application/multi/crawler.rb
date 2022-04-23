@@ -39,16 +39,15 @@ module Crawler
                 sleep 0.1 while self.done_signals.size != self.auditors.size
             end
 
-            def clean_up
-                return if self.done_signals.size != self.auditors.size
-
+            def clean_up( *args )
                 self.auditors.each do |auditor|
                     auditor.multi.clean_up { auditor.shutdown {} }
                 end
+
                 self.auditors.clear
                 self.done_signals.clear
 
-                super
+                super( *args )
             end
 
             def preferred_auditor
@@ -101,7 +100,7 @@ module Crawler
 
             def signal_done( instance_url )
                 self.done_signals << instance_url
-                clean_up
+                nil
             end
 
             def signal_not_done( instance_url )

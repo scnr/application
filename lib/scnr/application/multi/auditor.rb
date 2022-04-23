@@ -48,7 +48,7 @@ module Auditor
         @auditing = true
         Thread.new do
             framework.audit
-            @crawler.multi.signal_done( self_url ) do
+            @crawler.multi.signal_done( @self_url ) do
                 @auditing = false
             end
         end
