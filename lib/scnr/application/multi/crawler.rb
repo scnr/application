@@ -43,7 +43,7 @@ module Crawler
                 return if self.done_signals.size != self.auditors.size
 
                 self.auditors.each do |auditor|
-                    auditor.multi.clean_up { auditor.shutdown { ap 1 } }
+                    auditor.multi.clean_up { auditor.shutdown {} }
                 end
 
                 super
