@@ -46,6 +46,7 @@ module Crawler
                     auditor.multi.clean_up { auditor.shutdown {} }
                 end
                 self.auditors.clear
+                self.done_signals.clear
 
                 super
             end
