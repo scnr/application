@@ -35,6 +35,10 @@ module Auditor
                 @crawler.multi.log_issue( issue.to_rpc_data ){}
             end
 
+            SCNR::Engine::UI::Output.on_error do |error|
+                @crawler.multi.log_error( error ){}
+            end
+
             @cb_set = true
         end
 

@@ -81,9 +81,135 @@ class RPCProxy
     #       (disabled by default)
     #   * `errors` -- {#errors} (disabled by default)
     #   * `sitemap` -- {#sitemap} (disabled by default)
-    def progress( options = {} )
+    def progress( options = {}, &block )
         # keep track based on session
-        progress_handler( options )
+        p = progress_handler( options )
+
+        framework = SCNR::Engine::Framework.unsafe
+        if framework.respond_to?( :auditors )
+            cp = p.dup
+            cp.delete :sitemap
+            cp.delete :issues
+
+            p[:multi] = {
+                crawler:  cp,
+                auditors: {}
+            }
+
+            if framework.auditors.any?
+                count = 0
+
+                framework.auditors.each do |auditor|
+                    auditor.scan.progress( without: [:sitemap, :issues] ) do |auditor_progress|
+                        count += 1
+                        p[:multi][:auditors][auditor.url] = auditor_progress
+
+                        if count == framework.auditors.size
+                            block.call calculate_median_progress( p )
+                        end
+                    end
+                end
+            else
+                block.call p
+            end
+        else
+            block.call p
+        end
+    end
+
+    def calculate_median_progress( progress )
+        arr = [
+          progress[:multi][:crawler][:statistics],
+          progress[:multi][:auditors].map { |_, p| p['statistics'].my_symbolize_keys }
+        ].flatten
+        progress[:statistics] = merge_statistics( arr )
+        progress
+    end
+
+    def merge_statistics( stats )
+        merged_statistics = stats.pop.dup
+
+        return {} if !merged_statistics || merged_statistics.empty?
+        return merged_statistics if stats.empty?
+
+        merged_statistics[:current_pages] = []
+
+        if merged_statistics[:current_page]
+            merged_statistics[:current_pages] << merged_statistics[:current_page]
+        end
+
+        sum = [
+          :request_count,
+          :response_count,
+          :time_out_count,
+          :total_responses_per_second,
+          :burst_response_time_sum,
+          :burst_response_count,
+          :burst_responses_per_second,
+          :max_concurrency
+        ]
+
+        average = [
+          :burst_average_response_time,
+          :total_average_response_time
+        ]
+
+        integers = [:max_concurrency, :request_count, :response_count, :time_out_count,
+                    :burst_response_count]
+
+        begin
+            stats.each do |instats|
+                (sum | average).each do |k|
+                    merged_statistics[:http][k] += Float( instats[:http][k] )
+                end
+
+                merged_statistics[:current_pages] << instats[:current_page] if instats[:current_page]
+            end
+
+            average.each do |k|
+                merged_statistics[:http][k] /= Float( stats.size + 1 )
+                merged_statistics[:http][k] = Float( sprintf( '%.2f', merged_statistics[:http][k] ) )
+            end
+
+            integers.each do |k|
+                merged_statistics[:http][k] = merged_statistics[:http][k].to_i
+            end
+        rescue => e
+            ap e
+            ap e.backtrace
+        end
+
+        average = [:seconds_per_job]
+        sum = [
+          :total_job_time, :queued_job_count, :completed_job_count, :time_out_count
+        ]
+        integers = [:total_job_time, :queued_job_count, :completed_job_count, :time_out_count]
+        begin
+            stats.each do |instats|
+                (sum | average).each do |k|
+                    merged_statistics[:browser_pool][k] += Float( instats[:browser_pool][k] )
+                end
+
+                merged_statistics[:current_pages] << instats[:current_page] if instats[:current_page]
+            end
+
+            average.each do |k|
+                merged_statistics[:browser_pool][k] /= Float( stats.size + 1 )
+                merged_statistics[:browser_pool][k] = Float( sprintf( '%.2f', merged_statistics[:browser_pool][k] ) )
+            end
+
+            integers.each do |k|
+                merged_statistics[:browser_pool][k] = merged_statistics[:browser_pool][k].to_i
+            end
+        rescue => e
+            ap e
+            ap e.backtrace
+        end
+
+        merged_statistics.delete :current_page
+        merged_statistics[:current_pages].uniq!
+
+        merged_statistics
     end
 
     # @param    [Integer]   from_index

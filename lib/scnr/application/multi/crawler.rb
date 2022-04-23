@@ -119,8 +119,8 @@ module Crawler
         nil
     end
 
-    def update_sitemap( entry )
-        SCNR::Engine::Data.framework.update_sitemap entry
+    def log_error( error )
+        SCNR::Engine::UI::Output.error error
         nil
     end
 
