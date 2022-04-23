@@ -7,10 +7,22 @@ module Auditor
 
         SCNR::Engine::Framework.class_eval do
 
+            attr_accessor :crawler
+
             def audit
                 # The trainer would lead us into a crawl, we don't want that.
                 @trainer.unhook!
                 super
+            end
+
+            def audit_page( page )
+                # ap "[#{Cuboid::Options.rpc.url}] AUDITING: #{page.dom.url}"
+
+                r = super( page )
+
+                @crawler.multi.replenish_page_buffer( Cuboid::Options.rpc.url ) {}
+
+                r
             end
 
             def clean_up( from_rpc = false )
@@ -33,6 +45,8 @@ module Auditor
                 @crawler.multi.log_error( error ){}
             end
 
+            framework.crawler = @crawler
+
             @cb_set = true
         end
 
@@ -42,7 +56,7 @@ module Auditor
         @auditing = true
         Thread.new do
             framework.audit
-            @crawler.multi.signal_done( @self_url ) do
+            @crawler.multi.signal_idle( @self_url ) do
                 @auditing = false
             end
         end
