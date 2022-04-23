@@ -9,7 +9,7 @@ instance.run(
     multi: {
       processes: 5
     },
-    url:    'http://testfire.net//',
+    url:    'http://testfire.net/',
     audit:  {
         elements: [:links, :forms, :cookies]
     },
