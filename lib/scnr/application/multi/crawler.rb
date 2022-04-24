@@ -10,14 +10,19 @@ module Crawler
                 # Us for just crawling.
                 r = super( page )
 
-                # We have a specific request by an auditor, must need its page
-                # buffer replenished.
-                if (auditor_url = @crawl_wakeup.pop)
-                    auditor = auditor_by_url( auditor_url )
-
-                # Clean slate, find the best one by other means.
+                # Could be a request for buffer replenishing, however if we've
+                # got idle auditors ignore it and prefer them instead to get the
+                # job done ASAP.
+                auditor_url = @crawl_wakeup.pop
+                if self.idle_signals.any?
+                    auditor = auditor_by_url( self.idle_signals.first )
+                elsif !auditor_url
+                    # Rotate auditors to even out workload.
+                    url, auditor = self.auditors.first
+                    self.auditors.delete( url )
+                    self.auditors[url] = auditor
                 else
-                    auditor = self.preferred_auditor
+                    auditor = auditor_by_url( auditor_url )
                 end
 
                 signal_working auditor.url
@@ -68,21 +73,6 @@ module Crawler
                 self.idle_signals.clear
 
                 super( *args )
-            end
-
-            def preferred_auditor
-                # Prefer an idle auditor...
-                auditor = auditor_by_url( self.idle_signals.first )
-
-                # ...however if all auditors are busy...
-                if !auditor
-                    # ...rotate them to keep distribution even.
-                    url, auditor = self.auditors.first
-                    self.auditors.delete( url )
-                    self.auditors[url] = auditor
-                end
-
-                auditor
             end
 
             def deduplicate_page_elements( page )
