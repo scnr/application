@@ -17,10 +17,14 @@ instance.run(
 )
 
 while instance.busy?
-    # ap instance.scan.progress(
-    #   as_hash: true,
-    #   with: [:issues, :sitemap, :errors]
-    # )
+    progress = instance.scan.progress(
+      as_hash: true,
+      with: [:issues, :sitemap, :errors]
+    )
+
+    if progress['multi']['auditors'].any?
+        instance.suspend!
+    end
     sleep 1
 end
 

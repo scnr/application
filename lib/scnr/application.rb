@@ -74,8 +74,11 @@ class Application < ::Cuboid::Application
             auditor_options['scope']['restrict_paths'].clear
             auditor_options['scope']['extend_paths'].clear
 
+            @auditors = []
             auditors.each do |instance_info|
-                self.class.connect( instance_info ).run( auditor_options )
+                auditor = self.class.connect( instance_info )
+                @auditors << auditor
+                auditor.run( auditor_options )
             end
 
             crawler.multi.set_auditors auditors
@@ -109,20 +112,25 @@ class Application < ::Cuboid::Application
     end
 
     def do_pause
+        @auditors.each { |auditor| auditor.pause! {} } if @auditors
         @api.scan.pause!
     end
 
     def do_resume
+        @auditors.each { |auditor| auditor.resume! {} } if @auditors
         @api.scan.resume!
     end
 
     def do_abort
+        @auditors.each { |auditor| auditor.abort! {} } if @auditors
         @api.scan.abort!
         report @api.scan.generate_report
     end
 
     # Override Cuboid instead of handling the event.
     def suspend!
+        fail 'Cannot suspend when in multi mode.' if @auditors
+
         @api.scan.suspend!
 
         # Change Cuboid's state to mirror the scanner's.
@@ -132,11 +140,15 @@ class Application < ::Cuboid::Application
     end
 
     def snapshot_path
+        fail 'Cannot suspend when in multi mode.' if @auditors
+
         @api.scan.snapshot_path
     end
 
     # Override Cuboid instead of handling the event.
     def restore!( ses )
+        fail 'Cannot restore when in multi mode.' if @auditors
+
         @api.scan.restore! ses
     end
 
