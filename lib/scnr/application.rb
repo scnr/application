@@ -53,10 +53,20 @@ class Application < ::Cuboid::Application
             auditors = []
             @multi[:processes].times do |i|
                 instance_info = agent.spawn
+                if !instance_info
+                    print_info "No more available slots for auditors."
+                    break
+                end
+
                 auditors << instance_info
 
                 instance = self.class.connect( instance_info )
                 instance.multi.make_auditor( crawler.url, crawler.token, instance.url )
+            end
+
+            if auditors.empty?
+                print_error "No available slots for auditors at all."
+                return
             end
 
             # We don't want the auditors to perform anr type of crawl related stuff.
