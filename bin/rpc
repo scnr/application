@@ -22,9 +22,9 @@ while instance.busy?
       with: [:issues, :sitemap, :errors]
     )
 
-    if progress['multi']['auditors'].any?
-        instance.suspend!
-    end
+    # if progress['multi']['auditors'].any?
+    #     instance.suspend!
+    # end
     sleep 1
 end
 
