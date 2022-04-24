@@ -7,7 +7,7 @@ instance = SCNR::Application.connect( agent.spawn )
 
 instance.run(
     multi: {
-      processes: 5
+      instances: 5
     },
     url:    'http://testfire.net/',
     audit:  {

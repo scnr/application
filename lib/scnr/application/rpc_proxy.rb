@@ -99,7 +99,7 @@ class RPCProxy
             if framework.auditors.any?
                 count = 0
 
-                framework.auditors.each do |auditor|
+                framework.auditors.values.each do |auditor|
                     auditor.scan.progress( without: [:sitemap, :issues] ) do |auditor_progress|
                         count += 1
                         p[:multi][:auditors][auditor.url] = auditor_progress

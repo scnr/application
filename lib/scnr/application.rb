@@ -36,10 +36,10 @@ class Application < ::Cuboid::Application
     end
 
     def run
-        if @multi[:processes].to_i > 1
+        if @multi[:instances].to_i > 1
 
             # One for the crawler.
-            @multi[:processes] -= 1
+            @multi[:instances] -= 1
 
             crawler = self.class.connect(
                 url:   Cuboid::Options.rpc.url,
@@ -51,7 +51,7 @@ class Application < ::Cuboid::Application
             agent = Processes::Agents.connect( Cuboid::Options.agent.url )
 
             auditors = []
-            @multi[:processes].times do |i|
+            @multi[:instances].times do |i|
                 instance_info = agent.spawn
                 if !instance_info
                     print_info "No more available slots for auditors."
