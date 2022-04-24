@@ -139,7 +139,7 @@ module Crawler
     end
 
     def log_error( error )
-        SCNR::Engine::UI::Output.error error
+        SCNR::Engine::UI::Output.print_error error
         nil
     end
 
