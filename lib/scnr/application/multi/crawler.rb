@@ -65,12 +65,8 @@ module Crawler
 
             def clean_up( *args )
                 self.auditors.values.each do |auditor|
-                    auditor.multi.clean_up { auditor.shutdown {} }
+                    auditor.multi.clean_up {}
                 end
-
-                @crawl_wakeup.clear
-                self.auditors.clear
-                self.idle_signals.clear
 
                 super( *args )
             end

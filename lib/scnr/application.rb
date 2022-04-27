@@ -106,6 +106,14 @@ class Application < ::Cuboid::Application
         false
     end
 
+    def shutdown
+        return if !@auditors
+
+        @auditors.each do |auditor|
+            auditor.shutdown {}
+        end
+    end
+
     def generate_report
         report( @api.scan.generate_report ) unless data.report
         super
@@ -122,7 +130,6 @@ class Application < ::Cuboid::Application
     end
 
     def do_abort
-        @auditors.each { |auditor| auditor.abort! {} } if @auditors
         @api.scan.abort!
         report @api.scan.generate_report
     end

@@ -272,6 +272,10 @@ class RPCProxy
             merged_statistics[:current_pages] << merged_statistics[:current_page]
         end
 
+        stats.each do |instats|
+            merged_statistics[:audited_pages] += instats[:audited_pages]
+        end
+
         sum = [
           :request_count,
           :response_count,
