@@ -25,7 +25,7 @@ Gem::Specification.new do |spec|
       spec.metadata['allowed_push_host'] = "TODO: Set to 'http://mygemserver.com' to prevent pushes to rubygems.org, or delete to allow pushes to any server."
     end
 
-    spec.add_dependency 'cuboid'
+    spec.add_dependency 'cuboid',      '~> 0.1.9.1'
     spec.add_dependency 'scnr-engine', '~> 1.0dev'
 
     spec.add_development_dependency 'bundler'
