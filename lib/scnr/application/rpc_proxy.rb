@@ -281,8 +281,6 @@ class RPCProxy
           :response_count,
           :time_out_count,
           :total_responses_per_second,
-          :burst_response_time_sum,
-          :burst_response_count,
           :burst_responses_per_second,
           :max_concurrency
         ]
@@ -292,8 +290,7 @@ class RPCProxy
           :total_average_response_time
         ]
 
-        integers = [:max_concurrency, :request_count, :response_count, :time_out_count,
-                    :burst_response_count]
+        integers = [:max_concurrency, :request_count, :response_count, :time_out_count]
 
         begin
             stats.each do |instats|
