@@ -107,6 +107,10 @@ class Application < ::Cuboid::Application
         false
     end
 
+    def errors
+        @errors
+    end
+
     def shutdown
         return if !@auditors
 

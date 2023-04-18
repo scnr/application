@@ -142,22 +142,12 @@ class RPCProxy
         scan.issues( without ).map(&:to_h)
     end
 
-    # @param    [Integer]   starting_line
+    # @param    [Integer]   index
     #   Sets the starting line for the range of errors to return.
     #
     # @return   [Array<String>]
-    def errors( starting_line = 0 )
-        # return [] if Cuboid::UI::Output.error_buffer.empty?
-        #
-        # error_strings = Cuboid::UI::Output.error_buffer
-        #
-        # if starting_line != 0
-        #     error_strings = error_strings[starting_line..-1]
-        # end
-        #
-        # error_strings
-
-        scan.errors( starting_line )
+    def errors( index = 0 )
+        scan.errors( index )
     end
 
     private
