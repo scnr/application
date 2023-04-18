@@ -97,18 +97,19 @@ class RPCProxy
             }
 
             if framework.frozen_auditors.any?
-                # ap framework.frozen_auditors.size
-
-                count = 0
-                framework.frozen_auditors.values.each do |auditor|
+                foreach = proc do |hash, auditor, iterator|
                     auditor.scan.progress( without: [:sitemap, :issues] ) do |auditor_progress|
-                        count += 1
-                        p[:multi][:auditors][auditor.url] = auditor_progress
-
-                        next if count != framework.frozen_auditors.size
-                        block.call calculate_median_progress( p )
+                        hash[auditor.url] = auditor_progress
+                        iterator.return( hash )
                     end
                 end
+                after = proc do |results|
+                    p[:multi][:auditors] = results
+                    block.call calculate_median_progress( p )
+                end
+                Raktr.global.create_iterator( framework.frozen_auditors.values ).inject(
+                  {}, foreach, after
+                )
             else
                 block.call p
             end
