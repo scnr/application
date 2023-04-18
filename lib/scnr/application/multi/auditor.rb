@@ -18,7 +18,9 @@ module Auditor
             def audit_page( page )
                 # ap "[#{Cuboid::Options.rpc.url}] AUDITING: #{page.dom.url}"
 
+                # @current_url = page.dom.url.to_s
                 r = super( page )
+                # @current_url = page.dom.url.to_s
 
                 @crawler.multi.replenish_page_buffer( Cuboid::Options.rpc.url ) {}
 
@@ -50,14 +52,24 @@ module Auditor
             @cb_set = true
         end
 
-        framework.push_to_page_queue page
+        if !framework.push_to_page_queue( page ) && !@auditing
+            @crawler.multi.signal_idle( @self_url ) {}
+            return
+        end
 
         return if @auditing
         @auditing = true
         Thread.new do
-            framework.audit
-            @crawler.multi.signal_idle( @self_url ) do
-                @auditing = false
+
+            begin
+                framework.audit
+                @crawler.multi.signal_idle( @self_url ) do
+                    @auditing = false
+                end
+
+            rescue => e
+                ap e
+                ap e.backtrace
             end
         end
 

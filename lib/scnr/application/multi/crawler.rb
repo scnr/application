@@ -48,11 +48,11 @@ module Crawler
                 @crawl_buffer = 5
 
                 # Start with setting all auditors to idle.
-                self.auditors.keys.each { |url| signal_idle( url ) }
+                self.frozen_auditors.keys.each { |url| signal_idle( url ) }
 
                 # Transmit new cookie vectors to auditors.
                 SCNR::Engine::HTTP::Client.on_new_cookies do |cookies, _|
-                    self.auditors.values.each do |auditor|
+                    self.frozen_auditors.values.each do |auditor|
                         auditor.multi.update_cookies( cookies.map(&:to_rpc_data) ) {}
                     end
                 end
@@ -60,11 +60,11 @@ module Crawler
                 super
 
                 # Crawling done, now wait for the auditors to complete as well.
-                sleep 0.1 while self.idle_signals.size != self.auditors.size
+                sleep 0.1 while self.idle_signals.size != self.frozen_auditors.size
             end
 
             def clean_up( *args )
-                self.auditors.values.each do |auditor|
+                self.frozen_auditors.values.each do |auditor|
                     auditor.multi.clean_up {}
                 end
 
@@ -101,6 +101,10 @@ module Crawler
 
             def auditors
                 @auditors ||= {}
+            end
+
+            def frozen_auditors
+                @frozen_auditors ||= {}
             end
 
             def auditor_by_url( url )
@@ -154,6 +158,9 @@ module Crawler
             framework.auditors[auditor_info['url']] =
               SCNR::Application.connect( auditor_info )
         end
+
+        framework.frozen_auditors.merge! framework.auditors
+        framework.frozen_auditors.freeze
 
         nil
     end

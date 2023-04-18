@@ -10,10 +10,10 @@ class Multi
         nil
     end
 
-    def make_auditor( url, token, self_url )
+    def make_auditor( crawler_url, token, self_url )
         self.class.include Auditor
 
-        @crawler  = Cuboid::Application.connect( url: url, token: token )
+        @crawler  = Cuboid::Application.connect( url: crawler_url, token: token )
         @self_url = self_url
         nil
     end

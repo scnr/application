@@ -86,7 +86,7 @@ class RPCProxy
         p = progress_handler( options )
 
         framework = SCNR::Engine::Framework.unsafe
-        if framework.respond_to?( :auditors )
+        if framework.respond_to?( :frozen_auditors )
             cp = p.dup
             cp.delete :sitemap
             cp.delete :issues
@@ -96,17 +96,17 @@ class RPCProxy
                 auditors: {}
             }
 
-            if framework.auditors.any?
-                count = 0
+            if framework.frozen_auditors.any?
+                # ap framework.frozen_auditors.size
 
-                framework.auditors.values.each do |auditor|
+                count = 0
+                framework.frozen_auditors.values.each do |auditor|
                     auditor.scan.progress( without: [:sitemap, :issues] ) do |auditor_progress|
                         count += 1
                         p[:multi][:auditors][auditor.url] = auditor_progress
 
-                        if count == framework.auditors.size
-                            block.call calculate_median_progress( p )
-                        end
+                        next if count != framework.frozen_auditors.size
+                        block.call calculate_median_progress( p )
                     end
                 end
             else
@@ -336,9 +336,13 @@ class RPCProxy
             ap e.backtrace
         end
 
-        merged_statistics[:current_pages] = [merged_statistics.delete(:current_page)]
+        merged_statistics[:current_pages] = []
+        if (cp = merged_statistics.delete(:current_page))
+            merged_statistics[:current_pages] << cp
+        end
         begin
             stats.each do |instats|
+                next if !instats[:current_page]
                 merged_statistics[:current_pages] << instats[:current_page]
             end
         rescue => e
