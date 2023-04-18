@@ -101,6 +101,7 @@ class Application < ::Cuboid::Application
         end
 
         @api.scan.options.set options
+        SCNR::Engine::HTTP::Client.reset
         true
     rescue Engine::Options::Error
         false
