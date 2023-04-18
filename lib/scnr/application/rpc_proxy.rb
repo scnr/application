@@ -266,12 +266,6 @@ class RPCProxy
         return {} if !merged_statistics || merged_statistics.empty?
         return merged_statistics if stats.empty?
 
-        merged_statistics[:current_pages] = []
-
-        if merged_statistics[:current_page]
-            merged_statistics[:current_pages] << merged_statistics[:current_page]
-        end
-
         stats.each do |instats|
             merged_statistics[:audited_pages] += instats[:audited_pages]
         end
@@ -282,12 +276,17 @@ class RPCProxy
           :time_out_count,
           :total_responses_per_second,
           :burst_responses_per_second,
-          :max_concurrency
+          :max_concurrency,
+          :download_bps,
+          :upload_bps,
+          :failed_count
         ]
 
         average = [
           :burst_average_response_time,
-          :total_average_response_time
+          :total_average_response_time,
+          :burst_average_app_time,
+          :total_average_app_time
         ]
 
         integers = [:max_concurrency, :request_count, :response_count, :time_out_count]
@@ -295,10 +294,8 @@ class RPCProxy
         begin
             stats.each do |instats|
                 (sum | average).each do |k|
-                    merged_statistics[:http][k] += Float( instats[:http][k] )
+                    merged_statistics[:http][k] += instats[:http][k]
                 end
-
-                merged_statistics[:current_pages] << instats[:current_page] if instats[:current_page]
             end
 
             average.each do |k|
@@ -316,16 +313,14 @@ class RPCProxy
 
         average = [:seconds_per_job]
         sum = [
-          :total_job_time, :queued_job_count, :completed_job_count, :time_out_count
+          :total_job_time, :queued_job_count, :completed_job_count, :time_out_count, :failed_count
         ]
         integers = [:total_job_time, :queued_job_count, :completed_job_count, :time_out_count]
         begin
             stats.each do |instats|
                 (sum | average).each do |k|
-                    merged_statistics[:browser_pool][k] += Float( instats[:browser_pool][k] )
+                    merged_statistics[:browser_pool][k] += instats[:browser_pool][k]
                 end
-
-                merged_statistics[:current_pages] << instats[:current_page] if instats[:current_page]
             end
 
             average.each do |k|
@@ -341,8 +336,15 @@ class RPCProxy
             ap e.backtrace
         end
 
-        merged_statistics.delete :current_page
-        merged_statistics[:current_pages].uniq!
+        merged_statistics[:current_pages] = [merged_statistics.delete(:current_page)]
+        begin
+            stats.each do |instats|
+                merged_statistics[:current_pages] << instats[:current_page]
+            end
+        rescue => e
+            ap e
+            ap e.backtrace
+        end
 
         merged_statistics
     end
