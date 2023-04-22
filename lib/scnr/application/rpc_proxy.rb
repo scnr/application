@@ -118,6 +118,10 @@ class RPCProxy
         end
     end
 
+    def generate_report_as_hash
+        scan.generate_report.to_rpc_data
+    end
+
     # @param    [Integer]   from_index
     #   Get sitemap entries after this index.
     #

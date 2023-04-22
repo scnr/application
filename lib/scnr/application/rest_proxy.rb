@@ -31,5 +31,11 @@ def self.registered( app )
         json data
     end
 
+    app.get '/report.json' do
+        headers 'content-type' => 'octet-stream/json'
+        instance_for( params[:instance] ) do |instance|
+            instance.scan.generate_report_as_hash.to_json
+        end
+    end
 end
 end
