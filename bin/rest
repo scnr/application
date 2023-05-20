@@ -40,7 +40,7 @@ end
 
 ###################################################################
 
-pid = SCNR::Application.spawn( :rest )
+pid = SCNR::Application.spawn( :rest, daemonize: true )
 sleep 1 while request( :get ).code == 0
 
 request :post, 'instances', {

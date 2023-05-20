@@ -1,7 +1,7 @@
 #!/usr/bin/env ruby
 require_relative '../lib/scnr/application'
 
-agent = SCNR::Application.spawn( :agent )
+agent = SCNR::Application.spawn( :agent, daemonize: true )
 
 instance = SCNR::Application.connect( agent.spawn )
 
