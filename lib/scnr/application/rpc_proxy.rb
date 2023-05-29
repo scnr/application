@@ -119,7 +119,7 @@ class RPCProxy
     end
 
     def generate_report_as_hash
-        scan.generate_report.to_rpc_data
+        scan.generate_report.to_h
     end
 
     # @param    [Integer]   from_index
