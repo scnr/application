@@ -5,23 +5,23 @@ application = SCNR::Application
 application.options = {
     url:    'http://testhtml5.vulnweb.com',
     audit:  {
-      elements: [:links, :forms, :cookies]
+      elements: [:links, :forms, :cookies, :ui_forms, :ui_inputs]
     },
-    checks: 'active/*'
+    checks: '*'
 }
 
 api = application.api
 
 api.state.on :change do |state|
-    ap state.status
+    pp state.status
 end
 
 api.data.sitemap.on :new do |entry|
-    ap entry
+    pp entry
 end
 api.data.issues.on :new do |issue|
-    ap issue
+    pp issue
 end
 
 application.run
-ap application.generate_report
+pp application.generate_report

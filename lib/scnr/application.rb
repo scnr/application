@@ -1,12 +1,12 @@
 require 'cuboid'
-require 'scnr/engine/api'
-
-require_relative 'application/rpc_proxy'
-require_relative 'application/multi'
-require_relative 'application/rest_proxy'
 
 module SCNR
 class Application < ::Cuboid::Application
+
+    require_relative 'application/api'
+    require_relative 'application/rpc_proxy'
+    require_relative 'application/multi'
+    require_relative 'application/rest_proxy'
 
     # Let's say one for the scanner and another for the browsers.
     provision_cores  2
@@ -32,7 +32,7 @@ class Application < ::Cuboid::Application
     def initialize(*)
         super
 
-        @api = Engine::API.new
+        @api = API.new
     end
 
     def run

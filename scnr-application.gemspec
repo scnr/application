@@ -10,15 +10,14 @@ Gem::Specification.new do |spec|
     spec.email         = ["tasos.laskos@gmail.com"]
 
     spec.summary       = %q{SCNR application.}
-    spec.homepage      = "http://placeholder.com"
+    spec.homepage      = "https://ecsypno.com"
 
-    spec.bindir        = "bin"
     spec.require_paths = ["lib"]
 
+    spec.files        += Dir.glob( 'examples/**/**' )
     spec.files        += Dir.glob( 'lib/**/**' )
     spec.test_files    = Dir.glob( 'spec/**/**' )
 
-    spec.executables   = Dir.glob( 'bin/*' ).map { |e| File.basename e }
     spec.require_paths = ['lib']
 
     if spec.respond_to?(:metadata)
