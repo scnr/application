@@ -14,7 +14,7 @@ Gem::Specification.new do |spec|
 
     spec.require_paths = ["lib"]
 
-    spec.files        += Dir.glob( 'bin/**/**' )
+    spec.files        << 'bin/.gitkeep'
     spec.files        += Dir.glob( 'examples/**/**' )
     spec.files        += Dir.glob( 'lib/**/**' )
     spec.test_files    = Dir.glob( 'spec/**/**' )
