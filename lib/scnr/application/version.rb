@@ -1,3 +1,3 @@
 module Application
-    VERSION = '0.1'
+    VERSION = IO.read( File.dirname( __FILE__ ) + '/version' ).strip
 end
