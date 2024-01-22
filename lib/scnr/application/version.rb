@@ -1,3 +1,3 @@
 module Application
-    VERSION = '1.0dev'
+    VERSION = '1.0'
 end
