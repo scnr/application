@@ -3,9 +3,9 @@ require_relative '../lib/scnr/application'
 
 application = SCNR::Application
 application.options = {
-    url:    'http://testhtml5.vulnweb.com',
+    url:    'https://ginandjuice.shop/',
     audit:  {
-      elements: [:links, :forms, :cookies, :ui_forms, :ui_inputs]
+      elements: [:links, :forms, :cookies, :headers, :jsons, :xmls, :ui_inputs, :ui_forms]
     },
     checks: '*'
 }

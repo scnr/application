@@ -9,9 +9,9 @@ at_exit { instance.shutdown }
 
 print 'Scanning.'
 instance.run(
-    url:    'http://testhtml5.vulnweb.com/',
+    url:    'https://ginandjuice.shop/',
     audit:  {
-        elements: [:links, :forms, :cookies, :ui_inputs, :ui_forms]
+      elements: [:links, :forms, :cookies, :headers, :jsons, :xmls, :ui_inputs, :ui_forms]
     },
     checks: ['*']
 )

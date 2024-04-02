@@ -10,11 +10,11 @@ at_exit { Cuboid::Processes::Manager.kill pid }
 request :post, 'instances', {
 
   # Scan this URL.
-  url:    'http://testhtml5.vulnweb.com',
+  url:    'https://ginandjuice.shop/',
 
   # Audit the following element types.
   audit:  {
-    elements: [:links, :forms, :cookies, :ui_inputs, :ui_forms]
+    elements: [:links, :forms, :cookies, :headers, :jsons, :xmls, :ui_inputs, :ui_forms]
   },
 
   # Load all active checks.
