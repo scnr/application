@@ -7,7 +7,7 @@ application.options = {
     audit:  {
       elements: [:links, :forms, :cookies, :headers, :jsons, :xmls, :ui_inputs, :ui_forms]
     },
-    checks: '*'
+    checks: ['*']
 }
 
 api = application.api

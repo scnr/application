@@ -18,7 +18,7 @@ request :post, 'instances', {
   },
 
   # Load all active checks.
-  checks: '*'
+  checks: ['*']
 }
 
 # The ID is used to represent that instance and allow us to manage it from here on out.
