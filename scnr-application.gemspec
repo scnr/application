@@ -1,11 +1,10 @@
 # coding: utf-8
 lib = File.expand_path('../lib', __FILE__)
 $LOAD_PATH.unshift(lib) unless $LOAD_PATH.include?(lib)
-require 'scnr/application/version'
 
 Gem::Specification.new do |spec|
     spec.name          = "scnr-application"
-    spec.version       = Application::VERSION
+    spec.version       = IO.read( File.dirname( __FILE__ ) + '/lib/scnr/application/version' ).strip
     spec.authors       = ["Tasos Laskos"]
     spec.email         = ["tasos.laskos@gmail.com"]
 
