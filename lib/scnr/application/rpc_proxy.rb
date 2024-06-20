@@ -1,5 +1,9 @@
 class RPCProxy
 
+    def generate_session_snapshot
+        scan.generate_session_snapshot
+    end
+
     # # Recommended usage
     #
     #   Please request from the method only the things you are going to actually

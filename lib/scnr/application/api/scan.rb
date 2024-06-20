@@ -121,4 +121,16 @@ child :scan, :Scan do
         SCNR::Engine::UnsafeFramework.report
     end
 
+    def_generate_session_snapshot do
+        fail 'Cannot generate session while scan is running.' if running?
+
+        SCNR::Engine::Data.clear
+        SCNR::Engine::State.browser_pool.clear
+        SCNR::Engine::State.framework.clear
+
+        snapshot_path = SCNR::Engine::UnsafeFramework.snapshot_path
+        SCNR::Engine::Snapshot.dump snapshot_path
+        snapshot_path
+    end
+
 end

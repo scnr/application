@@ -37,5 +37,11 @@ def self.registered( app )
             instance.scan.generate_report_as_hash.to_json
         end
     end
+
+    app.get '/session' do
+        instance_for( params[:instance] ) do |instance|
+            json( session: instance.scan.generate_session_snapshot )
+        end
+    end
 end
 end

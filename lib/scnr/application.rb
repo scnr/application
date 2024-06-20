@@ -94,6 +94,9 @@ class Application < ::Cuboid::Application
     def validate_options( options )
         options = options.dup
 
+        # We could be dealing with a restored session.
+        options ||= {}
+
         @multi = options.delete('multi')&.my_symbolize_keys || {}
 
         if !@multi.empty? && !Cuboid::Options.agent.url
@@ -154,6 +157,12 @@ class Application < ::Cuboid::Application
         fail 'Cannot suspend when in multi mode.' if @auditors
 
         @api.scan.snapshot_path
+    end
+
+    def session_snapshot_path
+        fail 'Cannot generate session when in multi mode.' if @auditors
+
+        @api.scan.generate_session_snapshot
     end
 
     # Override Cuboid instead of handling the event.
