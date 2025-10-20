@@ -8,17 +8,30 @@ at_exit { Cuboid::Processes::Manager.kill pid }
 
 # Create a new scanner Instance (process) and run a scan with the following options.
 request :post, 'instances', {
-
-  # Scan this URL.
-  url:    'https://ginandjuice.shop/',
-
-  # Audit the following element types.
-  audit:  {
-    elements: [:links, :forms, :cookies, :headers, :jsons, :xmls, :ui_inputs, :ui_forms]
+  "url": "http://testphp.vulnweb.com/",
+  "audit": {
+    "parameter_values": true,
+    "mode": "moderate",
+    "links": true,
+    "forms": true,
+    "cookies": true,
+    "headers": true,
+    "ui_inputs": true,
+    "ui_forms": true
   },
-
-  # Load all active checks.
-  checks: ['*']
+  "scope": {
+    "directory_depth_limit": 3,
+    "auto_redundant_paths": 5,
+    "depth_limit": 5,
+    "dom_depth_limit": 4,
+    "redundant_path_patterns": {
+      "crawl_me_4_times": 4
+    }
+  },
+  "checks": [
+    "active/*"
+  ],
+  "authorized_by": "darkinvader.io"
 }
 
 # The ID is used to represent that instance and allow us to manage it from here on out.
