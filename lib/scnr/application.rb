@@ -1,3 +1,8 @@
+# Load the umbrella first so Ecsypno::License.configure(SCNR) runs
+# before any consumer (Cuboid's spawn shim, CLI, ui-pro) reaches the
+# engine's option groups — they read the license home at autoload time
+# and crash if it's unset.
+require 'scnr'
 require 'cuboid'
 
 module SCNR
