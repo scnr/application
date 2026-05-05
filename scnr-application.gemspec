@@ -27,6 +27,7 @@ Gem::Specification.new do |spec|
     spec.add_dependency 'cuboid',      '~> 0.3'
     spec.add_dependency 'scnr-license-client'
     spec.add_dependency 'scnr-engine', '~> 0.1'
+    spec.add_dependency 'mcp',         '>= 0.15'
 
     spec.add_development_dependency 'bundler'
     spec.add_development_dependency 'rake'

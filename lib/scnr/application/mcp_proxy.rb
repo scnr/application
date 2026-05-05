@@ -45,17 +45,61 @@ module MCPProxy
 
     # ── Read-only tools ──────────────────────────────────────────
 
-    # Engine progress — issues so far, sitemap size, errors, statistics.
-    # Mirrors `GET /progress` in RESTProxy but unbatched (callers can
-    # ask repeatedly; we don't track seen-state per session here).
+    # Engine progress — mirrors REST `/progress`: status + statistics +
+    # issues + errors + sitemap by default. Caller passes back what
+    # it has already seen via `issues_since` / `errors_since` /
+    # `sitemap_since` to get only deltas; high-cadence pollers can opt
+    # out of any block via `without_*: true`.
     class Progress < ::MCP::Tool
         tool_name   'progress'
-        description 'Returns the current scan progress: status, issues, errors, sitemap size, statistics.'
-        input_schema(properties: {})
+        description 'Returns the current scan: status + statistics + issues + errors + sitemap. Pass `issues_since` (digests), `errors_since` (offset), `sitemap_since` (offset) to receive only deltas you have not already seen. Use `without_issues / without_errors / without_sitemap / without_statistics: true` to drop a block entirely.'
+        input_schema(
+            properties: {
+                issues_since: {
+                    type:  'array',
+                    items: { type: ['integer', 'string'] },
+                    description: 'Digests of issues already seen (32-bit ints, but numeric strings are accepted too). When present the `issues` field contains only the new ones.'
+                },
+                errors_since: {
+                    type:    'integer',
+                    minimum: 0,
+                    description: 'Errors offset. When present the response includes only errors past this index.'
+                },
+                sitemap_since: {
+                    type:    'integer',
+                    minimum: 0,
+                    description: 'Sitemap offset. When present the response includes only sitemap entries past this index.'
+                },
+                without_issues:     { type: 'boolean', default: false, description: 'Skip the `issues` field entirely (overrides `issues_since`).' },
+                without_errors:     { type: 'boolean', default: false, description: 'Skip the `errors` field entirely (overrides `errors_since`).' },
+                without_sitemap:    { type: 'boolean', default: false, description: 'Skip the `sitemap` field entirely (overrides `sitemap_since`).' },
+                without_statistics: { type: 'boolean', default: false, description: 'Omit the (large) `statistics` block from the response — useful for high-cadence pollers that only need status + deltas.' }
+            }
+        )
 
-        def self.call( server_context:, ** )
+        def self.call( server_context:,
+                       issues_since: nil, errors_since: 0, sitemap_since: 0,
+                       without_issues: false, without_errors: false,
+                       without_sitemap: false, without_statistics: false, ** )
             MCPProxy.instrumented_call(server_context) do |instance|
-                instance.scan.progress
+                with    = []
+                without = []
+
+                unless without_issues
+                    with << :issues
+                    without << { issues: issues_since.map( &:to_i ) } if issues_since
+                end
+
+                with << { errors:  errors_since.to_i  } unless without_errors
+                with << { sitemap: sitemap_since.to_i } unless without_sitemap
+
+                without << :statistics if without_statistics
+
+                opts = {}
+                opts[:with]    = with    if with.any?
+                opts[:without] = without if without.any?
+
+                instance.scan.progress(opts)
             end
         end
     end
@@ -94,22 +138,27 @@ module MCPProxy
 
     # Issues found, optionally filtering out digests the caller has
     # already seen — same shape as the RESTProxy progress payload's
-    # `without: { issues: [digests] }`.
+    # `without: { issues: [digests] }`. Engine digests are 32-bit
+    # `xxh32` integers; JSON-RPC clients commonly stringify large
+    # numbers, so the schema accepts integers *or* strings and we
+    # coerce to Integer before handing them to the engine — without
+    # the coercion the engine's `==` comparison silently misses every
+    # filter and re-emits the full set on each call.
     class Issues < ::MCP::Tool
         tool_name   'issues'
-        description 'Returns issues found so far. Pass `without` (array of digest strings) to skip those already seen.'
+        description 'Returns issues found so far. Pass `without` (array of digests already seen, integers or numeric strings) to skip those.'
         input_schema(
             properties: {
                 without: {
                     type:  'array',
-                    items: { type: 'string' }
+                    items: { type: ['integer', 'string'] }
                 }
             }
         )
 
         def self.call( server_context:, without: [], ** )
             MCPProxy.instrumented_call(server_context) do |instance|
-                instance.scan.issues_as_hash( without )
+                instance.scan.issues_as_hash( without.map( &:to_i ) )
             end
         end
     end
