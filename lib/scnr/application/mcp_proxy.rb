@@ -1,6 +1,16 @@
 require 'mcp'
 require 'json'
 
+# json-schema (transitive dep of `mcp` for MCP::Tool input/output
+# schema validation) emits a one-time deprecation notice the first
+# time it validates anything unless we opt out of its MultiJson
+# backend up-front. Has to run BEFORE the MCP::Tool subclasses below
+# define their input_schemas — otherwise the warning fires at class-
+# definition time. Cuboid's MCP server file does the same on its
+# load path.
+require 'json-schema'
+JSON::Validator.use_multi_json = false
+
 module SCNR
 class Application
 
