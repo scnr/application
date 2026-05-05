@@ -39,7 +39,7 @@ module MCPProxy
     rescue => e
         ::MCP::Tool::Response.new(
             [{ type: 'text', text: "error: #{e.class}: #{e.message}" }],
-            true   # is_error
+            error: true
         )
     end
 
