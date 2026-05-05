@@ -19,6 +19,7 @@ class Application < ::Cuboid::Application
     require_relative 'application/rpc_proxy'
     require_relative 'application/multi'
     require_relative 'application/rest_proxy'
+    require_relative 'application/mcp_proxy'
 
     # Let's say one for the scanner and another for the browsers.
     provision_cores  2
@@ -36,6 +37,7 @@ class Application < ::Cuboid::Application
     instance_service_for :multi, Multi
 
     rest_service_for     :scan,  RESTProxy
+    mcp_service_for      :scan,  MCPProxy
 
     serialize_with Marshal
 
