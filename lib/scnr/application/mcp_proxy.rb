@@ -123,9 +123,9 @@ module MCPProxy
     end
 
     # ── Mutator tools ────────────────────────────────────────────
-    # Kept narrow — pause/resume are safe and reversible. Abort + the
-    # heavier mutators stay deferred until we have the auth story and
-    # a clear policy on which MCP clients can mutate state.
+    # Pause/resume are safe and reversible. Abort terminates the run —
+    # whoever can call it controls scan lifecycle, so once auth lands
+    # this is the obvious gate point.
 
     class Pause < ::MCP::Tool
         tool_name   'pause'
@@ -153,6 +153,19 @@ module MCPProxy
         end
     end
 
+    class Abort < ::MCP::Tool
+        tool_name   'abort'
+        description 'Abort the scan. Terminates the run — irreversible. Use `pause` if you might want to resume.'
+        input_schema(properties: {})
+
+        def self.call( server_context:, ** )
+            MCPProxy.instrumented_call(server_context) do |instance|
+                instance.scan.abort!
+                'aborted'
+            end
+        end
+    end
+
     TOOLS = [
         Progress,
         Report,
@@ -160,7 +173,8 @@ module MCPProxy
         Issues,
         Errors,
         Pause,
-        Resume
+        Resume,
+        Abort
     ].freeze
 
     # Cuboid::MCP::Server::Dispatcher reads `handler.tools` to populate
