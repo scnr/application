@@ -117,10 +117,38 @@ class Application < ::Cuboid::Application
             raise ArgumentError, 'Multi options set but without Agent.'
         end
 
+        options['plugins'] = self.class.merge_default_plugins(
+            options.delete( 'plugins' ) || options.delete( :plugins )
+        )
+
         @api.scan.options.set options
         true
     rescue Engine::Options::Error
         false
+    end
+
+    # Always layer the engine's default-plugin set under whatever the
+    # caller supplied for `options[:plugins]`. The engine wants a
+    # `Hash{name => options}`; we accept the convenience shapes a REST
+    # / MCP client is likely to send (Array of names, single name) and
+    # normalise. User-supplied entries override default per-plugin
+    # options for the same name.
+    def self.merge_default_plugins( user )
+        plugins = {}
+        SCNR::Engine::Framework.unsafe.plugins.default.each do |name|
+            plugins[name.to_s] = {}
+        end
+
+        case user
+        when Hash
+            user.each { |k, v| plugins[k.to_s] = v || {} }
+        when Array
+            user.each   { |k|    plugins[k.to_s] ||= {} }
+        when String, Symbol
+            plugins[user.to_s] ||= {}
+        end
+
+        plugins
     end
 
     def errors

@@ -395,10 +395,18 @@ module MCPProxy
           - `include_subdomains` *(bool)* — follow subdomains (default false).
           - `exclude_path_patterns` *(string[])* — regex patterns; matching URLs
              are skipped.
-        * **`audit`** *(object)* —
-          - `elements` *(symbol[])* — which input surfaces to audit. See
-             glossary entry "audit.elements". Omit to audit them all
-             (CLI default).
+        * **`audit`** *(object, recommended)* —
+          - `elements` *(string[])* — element types to audit. Pick
+            from `links`, `forms`, `cookies`, `headers`, `ui_inputs`,
+            `ui_forms`, `jsons`, `xmls`. (`nested_cookies` is opt-in;
+            `link_templates` is a regex-pattern list, not a boolean
+            toggle, and goes in `audit.link_templates` directly — do
+            not add it to `audit.elements`.) The engine's bare defaults
+            leave every element OFF — only the `spectre_scan` CLI
+            flips them on. The `spectre://option-presets/quick-scan`
+            preset includes the standard 8-element list; if you build
+            options from scratch and skip `audit.elements`, the run
+            will crawl but audit nothing (passive findings only).
         * **`checks`** *(string[])* — check names to load, or `["*"]` for
           all (CLI default). Pass a narrower list (e.g.
           `["xss*", "sql_injection*"]`) to restrict.
@@ -408,7 +416,13 @@ module MCPProxy
         * **`browser_cluster`** *(object)* — DOM/JS audit settings:
           - `pool_size` *(int)* — number of browsers.
           - `job_timeout` *(int, sec)* — per-page browser job timeout.
-        * **`plugins`** *(object)* — plugin name → its option hash.
+        * **`plugins`** *(object | string[] | string)* — extra plugins to
+          load on top of the engine's defaults. Accepts a Hash
+          (`{ "name" => { ...options } }`), an Array of names, or a
+          single name. The application **always** merges the engine's
+          default-plugin set in first; you only need to pass this when
+          you want extras enabled. Pass `{}` (or omit) for defaults
+          alone.
         * **`authorized_by`** *(string)* — e-mail address of the authorising
           person, added to outbound requests' `From` header.
 
@@ -416,14 +430,28 @@ module MCPProxy
         scan, `url` is the minimum.
     MARKDOWN
 
-    # Same coverage as the `spectre_scan` CLI default — all element
-    # kinds, all checks, default plugins, no scope cap. Set
-    # `scope.page_limit` (or other `scope.*` knobs) explicitly if you
-    # want the run bounded.
+    # Same coverage as the `spectre_scan` CLI default — every audit
+    # element enabled, all checks, default plugins (auto-merged by
+    # the application — see `spectre://options/reference`), no scope
+    # cap. Set `scope.page_limit` (or other `scope.*` knobs)
+    # explicitly if you want the run bounded.
+    #
+    # `audit.<element>: true` is set explicitly here because the
+    # engine's bare defaults leave them all unset — only the CLI
+    # turns them on. Without this an MCP-driven scan crawls but
+    # audits nothing, surfacing only passive findings.
     QUICK_SCAN_PRESET = {
-        url:     '<TARGET URL>',
-        checks:  ['*'],
-        plugins: ['defaults/*']
+        url:    '<TARGET URL>',
+        checks: ['*'],
+        audit:  {
+            # Same 8-element default the `spectre_scan` CLI applies
+            # when the operator passes no `--audit-*` flags
+            # (`ui/cli/engine.rb#audit_options`). `nested_cookies` is
+            # opt-in; `link_templates` isn't a boolean toggle — its
+            # setter expects regex patterns and would raise if added
+            # here.
+            elements: %w(links forms cookies headers ui_inputs ui_forms jsons xmls)
+        }
     }.freeze
 
     RESOURCES = [
@@ -442,7 +470,7 @@ module MCPProxy
         ::MCP::Resource.new(
             uri:         'spectre://option-presets/quick-scan',
             name:        'Quick-scan options preset',
-            description: 'JSON template for `spawn_instance.options` that mirrors the `spectre_scan` CLI default — all element kinds, all checks, default plugins, no scope cap. Replace `<TARGET URL>`. Add `scope.page_limit` etc. yourself when you want a bounded run.',
+            description: 'JSON template for `spawn_instance.options` that mirrors the `spectre_scan` CLI default — all element kinds, all checks, no scope cap. The engine\'s default plugins are auto-merged by the application; you only need to set `plugins` when you want extras on top. Replace `<TARGET URL>`. Add `scope.page_limit` etc. yourself when you want a bounded run.',
             mime_type:   'application/json'
         )
     ].freeze
