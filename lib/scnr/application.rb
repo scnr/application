@@ -1,8 +1,15 @@
-# Load the umbrella first so Ecsypno::License.configure(SCNR) runs
-# before any consumer (Cuboid's spawn shim, CLI, ui-pro) reaches the
-# engine's option groups — they read the license home at autoload time
-# and crash if it's unset.
-require 'scnr'
+require 'ecsypno/license'
+
+# Self-bootstrap the SCNR umbrella only if no other product has
+# configured the license yet. Cuboid's spawn shim and the bare-CLI
+# case have nothing loaded — they need this to avoid the engine's
+# option groups crashing with "License home is unset" at autoload
+# time. But the Apex (rkn) consumer chain configures Ecsypno::License
+# with RKN first and *then* requires scnr/application; bootstrapping
+# unconditionally here would overwrite RKN with SCNR and the license
+# server sees the wrong product.
+require 'scnr' if Ecsypno::License.product.nil?
+
 require 'cuboid'
 
 module SCNR
