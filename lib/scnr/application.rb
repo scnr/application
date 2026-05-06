@@ -39,6 +39,10 @@ class Application < ::Cuboid::Application
     rest_service_for     :scan,  RESTProxy
     mcp_service_for      :scan,  MCPProxy
 
+    # Top-level (no instance_id required) MCP tools — catalog /
+    # metadata a client may want before deciding what to spawn.
+    mcp_app_tool         MCPProxy::ListChecks
+
     serialize_with Marshal
 
     attr_reader :api

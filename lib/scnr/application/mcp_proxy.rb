@@ -339,6 +339,92 @@ module MCPProxy
         TOOLS
     end
 
+    # ── App-level catalog tool ───────────────────────────────────
+    # Registered at the top-level `/mcp` endpoint via
+    # `Cuboid::Application.mcp_app_tool` (see `lib/scnr/application.rb`)
+    # so a client can enumerate checks WITHOUT needing to spawn an
+    # instance first.
+    class ListChecks < ::MCP::Tool
+        tool_name   'list_checks'
+        description 'Returns the catalog of vulnerability checks the engine ships — shortname, severity, elements audited, tags, description. Pass the resulting `shortname`s back as `spawn_instance.options.checks` to scope a run; if you don\'t pass `checks` the engine loads all of them.'
+
+        input_schema(
+            properties: {
+                severities: {
+                    type:        'array',
+                    items:       { type: 'string', enum: %w(high medium low informational none) },
+                    description: 'Optional filter — return only checks at these severity levels.'
+                },
+                tags: {
+                    type:        'array',
+                    items:       { type: 'string' },
+                    description: 'Optional filter — return only checks tagged with at least one of these tags (e.g. `xss`, `sqli`, `injection`).'
+                }
+            }
+        )
+
+        output_schema(
+            properties: {
+                checks: {
+                    type:        'array',
+                    description: 'Sorted high-severity-first, then by name.',
+                    items: {
+                        type: 'object',
+                        properties: {
+                            shortname:   { type: 'string', description: 'Pass this in `options.checks`.' },
+                            name:        { type: 'string', description: 'Human-readable label.' },
+                            description: { type: 'string', description: 'What the check does, in prose.' },
+                            severity:    { type: 'string', description: 'one of `high`, `medium`, `low`, `informational`, `none`.' },
+                            elements:    { type: 'array', items: { type: 'string' }, description: 'Element types this check audits (links / forms / cookies / headers / …).' },
+                            tags:        { type: 'array', items: { type: 'string' } },
+                            platforms:   { type: 'array', items: { type: 'string' }, description: 'Platforms this check is relevant to (e.g. `php`, `mysql`); empty when platform-agnostic.' }
+                        }
+                    }
+                }
+            },
+            required: ['checks']
+        )
+
+        SEVERITY_ORDER = %w(high medium low informational none).freeze
+
+        def self.call( severities: nil, tags: nil, ** )
+            MCPProxy.instrumented_call({}) do |_instance|
+                mgr = ::SCNR::Engine::Framework.unsafe.checks
+                mgr.load_all
+
+                wanted_severities = severities && Array(severities).map(&:to_s).to_set
+                wanted_tags       = tags       && Array(tags).map(&:to_s).to_set
+
+                rows = mgr.values.map do |klass|
+                    info = klass.info || {}
+                    raw_tags = Array(info[:tags]) | Array(info.dig(:issue, :tags))
+                    {
+                        shortname:   klass.shortname.to_s,
+                        name:        info[:name].to_s.strip,
+                        description: info[:description].to_s.strip,
+                        severity:    info.dig(:issue, :severity).to_s,
+                        elements:    Array(info[:elements]).map(&:to_s),
+                        tags:        raw_tags.map(&:to_s),
+                        platforms:   Array(info[:platforms]).map(&:to_s)
+                    }
+                end
+
+                if wanted_severities
+                    rows.select! { |r| wanted_severities.include?( r[:severity] ) }
+                end
+                if wanted_tags
+                    rows.select! { |r| (r[:tags].to_set & wanted_tags).any? }
+                end
+
+                rows.sort_by! do |r|
+                    [SEVERITY_ORDER.index( r[:severity] ) || 99, r[:name]]
+                end
+
+                { checks: rows }
+            end
+        end
+    end
+
     # ── MCP resources ────────────────────────────────────────────
     # Static, brand-namespaced documents an LLM client can pull via
     # `resources/list` + `resources/read`. The point is to make the
@@ -372,7 +458,10 @@ module MCPProxy
           with `without_statistics: true`.
         * **check** — a vulnerability test (e.g. `xss`, `sql_injection`,
           `path_traversal`). Configured via `options.checks` — either
-          a list of names or `*` for all.
+          a list of names or `*` for all. Call the `list_checks`
+          tool for the full catalog (shortname, severity, elements,
+          tags, description); the response's `shortname`s plug
+          straight into `options.checks`.
         * **scope** — what the engine is allowed to crawl/audit.
           Bounds it via `options.scope`: `page_limit`, `directory_depth_limit`,
           `dom_depth_limit`, `include_subdomains`, etc.
@@ -409,7 +498,10 @@ module MCPProxy
             will crawl but audit nothing (passive findings only).
         * **`checks`** *(string[])* — check names to load, or `["*"]` for
           all (CLI default). Pass a narrower list (e.g.
-          `["xss*", "sql_injection*"]`) to restrict.
+          `["xss*", "sql_injection*"]`) to restrict. Call the
+          `list_checks` tool first to enumerate every available check
+          (shortname, severity, tags); the returned `shortname`s plug
+          straight into this key.
         * **`http`** *(object)* —
           - `request_concurrency` *(int)* — parallel HTTP requests.
           - `request_timeout` *(int, ms)* — per-request timeout.
