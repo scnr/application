@@ -492,10 +492,12 @@ module MCPProxy
             toggle, and goes in `audit.link_templates` directly — do
             not add it to `audit.elements`.) The engine's bare defaults
             leave every element OFF — only the `spectre_scan` CLI
-            flips them on. The `spectre://option-presets/quick-scan`
-            preset includes the standard 8-element list; if you build
-            options from scratch and skip `audit.elements`, the run
-            will crawl but audit nothing (passive findings only).
+            flips them on. Both option presets
+            (`spectre://option-presets/quick-scan`,
+            `spectre://option-presets/full-scan`) include the
+            standard 8-element list; if you build options from
+            scratch and skip `audit.elements`, the run will crawl
+            but audit nothing (passive findings only).
         * **`checks`** *(string[])* — check names to load, or `["*"]` for
           all (CLI default). Pass a narrower list (e.g.
           `["xss*", "sql_injection*"]`) to restrict. Call the
@@ -522,11 +524,14 @@ module MCPProxy
         scan, `url` is the minimum.
     MARKDOWN
 
-    # Same coverage as the `spectre_scan` CLI default — every audit
-    # element enabled, all checks, default plugins (auto-merged by
-    # the application — see `spectre://options/reference`), no scope
-    # cap. Set `scope.page_limit` (or other `scope.*` knobs)
-    # explicitly if you want the run bounded.
+    # Bounded "spec a target" scan — every audit element, every
+    # check, default plugins (auto-merged by the application — see
+    # `spectre://options/reference`), capped at 50 crawled pages so
+    # an MCP-driven smoke test on a real site finishes in minutes
+    # rather than hours. Bump / remove `scope.page_limit` for a
+    # representative or full audit (or use the
+    # `spectre://option-presets/full-scan` preset, which omits the
+    # cap).
     #
     # `audit.<element>: true` is set explicitly here because the
     # engine's bare defaults leave them all unset — only the CLI
@@ -543,6 +548,25 @@ module MCPProxy
             # setter expects regex patterns and would raise if added
             # here.
             elements: %w(links forms cookies headers ui_inputs ui_forms jsons xmls)
+        },
+        scope: {
+            # Smoke-test default — first 50 crawled pages, then
+            # audit completes against what was discovered. Drop the
+            # whole `scope` block (or use `full-scan`) for an
+            # uncapped run.
+            page_limit: 50
+        }
+    }.freeze
+
+    # Same coverage as `QUICK_SCAN_PRESET` minus the
+    # `scope.page_limit` cap — every audit element, every check,
+    # default plugins, no scope cap. Use this when an MCP client
+    # explicitly wants a complete audit and is OK with a long run.
+    FULL_SCAN_PRESET = {
+        url:    '<TARGET URL>',
+        checks: ['*'],
+        audit:  {
+            elements: %w(links forms cookies headers ui_inputs ui_forms jsons xmls)
         }
     }.freeze
 
@@ -556,13 +580,19 @@ module MCPProxy
         ::MCP::Resource.new(
             uri:         'spectre://options/reference',
             name:        'spawn_instance.options reference',
-            description: 'Concrete keys accepted by `spawn_instance.options` (url, scope, audit, checks, http, browser_cluster, plugins, authorized_by) with allowed values and quick-scan defaults.',
+            description: 'Concrete keys accepted by `spawn_instance.options` (url, scope, audit, checks, http, browser_cluster, plugins, authorized_by). See `spectre://option-presets/quick-scan` (capped 50-page smoke test) and `spectre://option-presets/full-scan` (uncapped) for ready-made templates.',
             mime_type:   'text/markdown'
         ),
         ::MCP::Resource.new(
             uri:         'spectre://option-presets/quick-scan',
             name:        'Quick-scan options preset',
-            description: 'JSON template for `spawn_instance.options` that mirrors the `spectre_scan` CLI default — all element kinds, all checks, no scope cap. The engine\'s default plugins are auto-merged by the application; you only need to set `plugins` when you want extras on top. Replace `<TARGET URL>`. Add `scope.page_limit` etc. yourself when you want a bounded run.',
+            description: 'JSON template for `spawn_instance.options` — every audit element, every check, default plugins (auto-merged by the application), capped at 50 crawled pages so a real-site smoke test finishes in minutes. Replace `<TARGET URL>`. Bump / drop `scope.page_limit` (or switch to `spectre://option-presets/full-scan`) for a longer run.',
+            mime_type:   'application/json'
+        ),
+        ::MCP::Resource.new(
+            uri:         'spectre://option-presets/full-scan',
+            name:        'Full-scan options preset',
+            description: 'Same shape as `spectre://option-presets/quick-scan` minus the `scope.page_limit` cap — every audit element, every check, default plugins, no scope cap. Use when you want a complete audit and accept a long run on a real site.',
             mime_type:   'application/json'
         )
     ].freeze
@@ -586,6 +616,11 @@ module MCPProxy
                 uri: uri, mime_type: 'application/json',
                 text: JSON.pretty_generate( QUICK_SCAN_PRESET )
             )
+        when 'spectre://option-presets/full-scan'
+            ::MCP::Resource::TextContents.new(
+                uri: uri, mime_type: 'application/json',
+                text: JSON.pretty_generate( FULL_SCAN_PRESET )
+            )
         end
     end
 
@@ -595,7 +630,7 @@ module MCPProxy
 
     class QuickScanPrompt < ::MCP::Prompt
         prompt_name 'quick_scan'
-        description 'Run a Spectre scan using the quick-scan preset (all elements, all checks, default plugins), poll progress every 5 s, and report issues one line per finding when status: done. Optional args narrow checks, cap the crawl, identify the operator, or splice in extra options.'
+        description 'Run a Spectre scan using the quick-scan preset (all elements, all checks, default plugins, capped at 50 crawled pages), poll progress every 5 s, and report issues one line per finding when status: done. Optional args narrow checks, override the default page cap, identify the operator, or splice in extra options. For an uncapped run, use the `full_scan` prompt or `spectre://option-presets/full-scan` instead.'
         arguments [
             ::MCP::Prompt::Argument.new(
                 name:        'url',
@@ -604,7 +639,7 @@ module MCPProxy
             ),
             ::MCP::Prompt::Argument.new(
                 name:        'page_limit',
-                description: 'Cap on crawled pages (positive integer). Without it a real site can take hours; 30 = smoke test, 200 = representative, omit for full audit.',
+                description: 'Override the preset\'s default cap of 50 crawled pages. 30 = smaller smoke test, 200 = representative, set to 0 / a very large value if you want effectively no cap (or use the `full_scan` prompt instead).',
                 required:    false
             ),
             ::MCP::Prompt::Argument.new(
@@ -663,7 +698,70 @@ module MCPProxy
         end
     end
 
-    PROMPTS = [ QuickScanPrompt ].freeze
+    class FullScanPrompt < ::MCP::Prompt
+        prompt_name 'full_scan'
+        description 'Run a Spectre scan using the full-scan preset (all elements, all checks, default plugins, NO page cap), poll progress every 5 s, and report issues one line per finding when status: done. Same shape as `quick_scan` minus the 50-page default cap — use this when you want a complete audit and accept a long run on a real site. Optional args still let you narrow checks, identify the operator, or splice in extra options.'
+        arguments [
+            ::MCP::Prompt::Argument.new(
+                name:        'url',
+                description: 'Target URL (http:// or https://). Must be a host the operator is authorised to scan.',
+                required:    true
+            ),
+            ::MCP::Prompt::Argument.new(
+                name:        'checks',
+                description: 'Comma-separated list of check globs to load instead of the default `*`. Examples: `xss*`, `sql_injection*,xss*`. Leave empty to load every check (CLI default).',
+                required:    false
+            ),
+            ::MCP::Prompt::Argument.new(
+                name:        'authorized_by',
+                description: 'Operator email — added to outbound HTTP `From` headers so target-site admins can identify the scan. Polite on third-party targets.',
+                required:    false
+            ),
+            ::MCP::Prompt::Argument.new(
+                name:        'extra_options',
+                description: 'JSON object merged into `options` after the preset. Use for anything not covered by the named args (e.g. `{"scope":{"include_subdomains":true},"http":{"request_concurrency":20}}`). Read `spectre://options/reference` for valid keys.',
+                required:    false
+            )
+        ]
+
+        def self.template( args, server_context: nil )
+            url           = args[:url]            || args['url']
+            checks        = args[:checks]         || args['checks']
+            authorized_by = args[:authorized_by]  || args['authorized_by']
+            extra_options = args[:extra_options]  || args['extra_options']
+
+            overrides = []
+            overrides << "  - Replace `checks` with #{checks.to_s.split(',').map(&:strip).reject(&:empty?).inspect}." if checks && !checks.to_s.empty?
+            overrides << "  - Set `authorized_by` to #{authorized_by.inspect}." if authorized_by && !authorized_by.to_s.empty?
+            overrides << "  - Deep-merge the following JSON object into `options` (caller-supplied, treat as raw options): `#{extra_options}`. Read `spectre://options/reference` for valid keys before merging." if extra_options && !extra_options.to_s.empty?
+
+            override_block = overrides.any? ? "\nApply these overrides on top of the preset before calling `spawn_instance`:\n#{overrides.join("\n")}\n" : ''
+
+            ::MCP::Prompt::Result.new(
+                description: 'Full Spectre scan + summary',
+                messages: [
+                    ::MCP::Prompt::Message.new(
+                        role:    'user',
+                        content: ::MCP::Content::Text.new(
+                            <<~PROMPT
+                                Run a full Spectre scan against #{url} via this MCP server. Heads-up: full scans on a real site can run for hours; expect a long polling loop.
+
+                                1. Read `spectre://options/reference` once if you don't already know the options shape.
+                                2. Build `options` from `spectre://option-presets/full-scan`, substituting the URL above. (No `scope.page_limit` — the run will crawl until exhaustion.)
+                                #{override_block}
+                                3. Call `spawn_instance` with `start: true` and the resulting `options`.
+                                4. Poll `scan_progress(instance_id, without_statistics: true)` every 5 seconds. Use `errors_since` / `sitemap_since` / `issues_seen` to fetch only deltas after the first poll.
+                                5. When `status` is `done` or `aborted`, call `scan_issues(instance_id)` and summarise — one line per finding: `[<check>] <severity> — <vector.action> (<input name>)`.
+                                6. Call `kill_instance(instance_id)` once you've reported.
+                            PROMPT
+                        )
+                    )
+                ]
+            )
+        end
+    end
+
+    PROMPTS = [ QuickScanPrompt, FullScanPrompt ].freeze
 
     def self.prompts
         PROMPTS
