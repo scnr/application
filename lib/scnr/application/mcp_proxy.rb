@@ -473,9 +473,8 @@ module MCPProxy
     OPTIONS_REFERENCE = <<~MARKDOWN
         # `options` reference
         
-        The full option surface accepted by `spawn_instance.options`
-        (over MCP) and by the `POST /instances` body (over REST). Hash,
-        all keys optional.
+        The full option surface accepted by `spawn_instance.options`.
+        Hash, all keys optional.
         
         The bare engine defaults leave every audit element OFF and every
         check unloaded; only `bin/spectre_scan` (and the option presets)
@@ -485,9 +484,9 @@ module MCPProxy
         
         ## Wire shape
         
-        This is what gets POSTed to `/instances` (REST) or sent as
-        `spawn_instance.options` (MCP) — a single nested JSON object,
-        all groups optional, every leaf documented further down. Each
+        This is what gets sent as `spawn_instance.options` — a single
+        nested JSON object, all groups optional, every leaf documented
+        further down. Each
         top-level key is its own JSON object (`audit`, `scope`, `http`,
         `dom`, `device`, `input`, `session`, `timeout`); the
         top-level scalars (`url`, `checks`, `plugins`, `authorized_by`,
@@ -659,9 +658,9 @@ module MCPProxy
         *(string, required for a real scan)*
         
         The target. Anything reachable over HTTP(S). Required for any
-        `POST /instances` (or `spawn_instance` with `start: true`); the
-        only spawn path where it can be omitted is `start: false` (an
-        idle instance set up to be configured later).
+        `spawn_instance` with `start: true`; the only spawn path where
+        it can be omitted is `start: false` (an idle instance set up
+        to be configured later).
         
         ```json
         { "url": "http://example.com/" }
@@ -1242,8 +1241,8 @@ module MCPProxy
         - **`timeout.duration`** *(int, sec)* — stop the scan after this
           many seconds.
         - **`timeout.suspend`** *(boolean, default: false)* — when the
-          timeout fires, suspend to a snapshot file (loadable later via
-          `POST /instances/restore`). Without this the run is aborted.
+          timeout fires, suspend to a snapshot file (loadable later out
+          of band). Without this the run is aborted.
         
         ---
         
