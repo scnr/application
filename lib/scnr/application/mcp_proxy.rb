@@ -1304,7 +1304,7 @@ module MCPProxy
         ::MCP::Resource.new(
             uri:         'spectre://options/reference',
             name:        'spawn_instance.options reference',
-            description: 'Concrete keys accepted by `spawn_instance.options` (url, scope, audit, checks, http, browser_cluster, plugins, authorized_by). See `spectre://option-presets/quick-scan` (capped 50-page smoke test) and `spectre://option-presets/full-scan` (uncapped) for ready-made templates.',
+            description: 'Concrete keys accepted by `spawn_instance.options` (url, scope, audit, checks, http, dom, plugins, authorized_by). See `spectre://option-presets/quick-scan` (capped 50-page smoke test) and `spectre://option-presets/full-scan` (uncapped) for ready-made templates.',
             mime_type:   'text/markdown'
         ),
         ::MCP::Resource.new(
