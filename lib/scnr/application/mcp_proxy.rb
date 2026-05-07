@@ -697,9 +697,7 @@ module MCPProxy
         ```
 
         The application **always** merges its default-plugin set in
-        first; this key is purely for extras / overrides. The `live`
-        plugin isn't user-loadable — it's auto-attached by the MCP
-        server when the session supports notifications.
+        first; this key is purely for extras / overrides.
         
         ### `authorized_by`
         
