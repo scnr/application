@@ -42,6 +42,7 @@ class Application < ::Cuboid::Application
     # Top-level (no instance_id required) MCP tools — catalog /
     # metadata a client may want before deciding what to spawn.
     mcp_app_tool         MCPProxy::ListChecks
+    mcp_app_tool         MCPProxy::ListPlugins
 
     serialize_with Marshal
 

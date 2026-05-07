@@ -425,6 +425,104 @@ module MCPProxy
         end
     end
 
+    # Plugin catalog — mirror of `list_checks`. Lets a client see
+    # which plugins are loadable without spawning an instance, and
+    # what config keys each one accepts (mainly relevant for the
+    # `plugins: { name: { ...config... } }` hash shape on
+    # spawn_instance.options).
+    class ListPlugins < ::MCP::Tool
+        tool_name   'list_plugins'
+        description 'Returns the catalog of plugins the engine ships — shortname, name, description, whether it auto-loads by default, and any per-plugin config options. Pass the resulting `shortname`s back as `spawn_instance.options.plugins` (array form) or `{ "<shortname>": { <config> } }` (hash form, with config keys drawn from the `options` array). Plugins with `default: true` are merged in automatically by the application even if you don\'t list them.'
+
+        # Plugins meant for programmatic auto-attachment (the MCP
+        # server attaches `live` itself when the session supports
+        # notifications) — never returned by list_plugins because
+        # passing them in `spawn_instance.options.plugins` would be
+        # at best redundant, at worst breaks the auto-attach contract.
+        EXCLUDED_SHORTNAMES = %w(live).to_set.freeze
+
+        input_schema(properties: {})
+
+        output_schema(
+            properties: {
+                plugins: {
+                    type:        'array',
+                    description: 'Sorted: default-loading plugins first, then alphabetical by name.',
+                    items: {
+                        type: 'object',
+                        properties: {
+                            shortname:   { type: 'string', description: 'Pass this in `options.plugins`.' },
+                            name:        { type: 'string', description: 'Human-readable label.' },
+                            description: { type: 'string', description: 'What the plugin does, in prose.' },
+                            author:      { type: 'array', items: { type: 'string' }, description: 'Author(s).' },
+                            version:     { type: 'string', description: 'Plugin version (independent of engine version).' },
+                            priority:    { type: 'integer', description: 'Execution priority group — lowest runs first; nil if unset.' },
+                            tags:        { type: 'array', items: { type: 'string' }, description: 'Free-form tags (when the plugin declares any).' },
+                            default:     { type: 'boolean', description: 'true if the application auto-merges this plugin into every scan.' },
+                            options: {
+                                type:        'array',
+                                description: 'Per-plugin config keys. Pass values via the hash-form `plugins: { <shortname>: { <option-name>: <value>, ... } }`.',
+                                items: {
+                                    type: 'object',
+                                    properties: {
+                                        name:        { type: 'string' },
+                                        type:        { type: 'string', description: 'string / int / bool / url / port / address / path / multiple_choice / json / object.' },
+                                        description: { type: 'string' },
+                                        required:    { type: 'boolean' },
+                                        default:     { description: 'Default value, if any.' },
+                                        choices:     { type: 'array', items: { type: 'string' }, description: 'Allowed values when type is `multiple_choice`.' }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            },
+            required: ['plugins']
+        )
+
+        def self.call( ** )
+            MCPProxy.instrumented_call({}) do |_instance|
+                mgr = ::SCNR::Engine::Framework.unsafe.plugins
+                mgr.load_all
+
+                default_set = mgr.default.map(&:to_s).to_set
+
+                rows = mgr.values.map do |klass|
+                    shortname = klass.shortname.to_s
+                    next if EXCLUDED_SHORTNAMES.include?( shortname )
+
+                    info = klass.info || {}
+                    {
+                        shortname:   shortname,
+                        name:        info[:name].to_s.strip,
+                        description: info[:description].to_s.strip,
+                        author:      Array(info[:author]).map(&:to_s),
+                        version:     info[:version].to_s,
+                        priority:    info[:priority],
+                        tags:        Array(info[:tags]).map(&:to_s),
+                        default:     default_set.include?( shortname ),
+                        options:     Array(info[:options]).map { |opt|
+                            row = {
+                                name:        opt.name.to_s,
+                                type:        opt.type.to_s,
+                                description: opt.description.to_s,
+                                required:    opt.required?,
+                                default:     opt.default
+                            }
+                            row[:choices] = Array(opt.choices).map(&:to_s) if opt.respond_to?( :choices ) && opt.choices
+                            row
+                        }
+                    }
+                end.compact
+
+                rows.sort_by! { |r| [r[:default] ? 0 : 1, r[:name]] }
+
+                { plugins: rows }
+            end
+        end
+    end
+
     # ── MCP resources ────────────────────────────────────────────
     # Static, brand-namespaced documents an LLM client can pull via
     # `resources/list` + `resources/read`. The point is to make the
