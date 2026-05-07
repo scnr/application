@@ -689,15 +689,17 @@ module MCPProxy
         *(object | string[] | string, default: `{}` — no plugins)*
         
         Plugins to load. Three accepted shapes:
-        
+
         ```json
-        { "plugins": {} }                         // load nothing extra
-        { "plugins": ["defaults/*"] }             // array of names / globs
-        { "plugins": { "live": { "url": "..." } } } // hash with per-plugin options
+        { "plugins": {} }                                    // load nothing extra
+        { "plugins": ["defaults/*"] }                        // array of names / globs
+        { "plugins": { "webhook_notify": { "url": "..." } } } // hash with per-plugin options
         ```
-        
+
         The application **always** merges its default-plugin set in
-        first; this key is purely for extras / overrides.
+        first; this key is purely for extras / overrides. The `live`
+        plugin isn't user-loadable — it's auto-attached by the MCP
+        server when the session supports notifications.
         
         ### `authorized_by`
         
